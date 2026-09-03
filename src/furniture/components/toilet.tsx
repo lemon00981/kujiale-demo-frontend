@@ -6,11 +6,11 @@ function Three({ f }: FurnitureRenderProps) {
   return (
     <group>
       {/* 底座 */}
-      <Box pos={[0, h * 0.3, 0]} size={[w, h * 0.5, d * 0.75]} color={OFFWHITE} />
+      <Box pos={[0, h * 0.3, 0]} size={[w, h * 0.5, d * 0.75]} color={OFFWHITE} material="ceramic" radius={0.03} />
       {/* 水箱 */}
-      <Box pos={[0, h * 0.75, -d / 2 + 0.12]} size={[w * 0.85, h * 0.6, 0.24]} color={OFFWHITE} />
+      <Box pos={[0, h * 0.75, -d / 2 + 0.12]} size={[w * 0.85, h * 0.6, 0.24]} color={OFFWHITE} material="ceramic" radius={0.03} />
       {/* 座圈 */}
-      <Box pos={[0, h * 0.56, d * 0.2]} size={[w * 0.85, 0.04, d * 0.4]} color={OFFWHITE} />
+      <Box pos={[0, h * 0.56, d * 0.2]} size={[w * 0.85, 0.04, d * 0.4]} color={OFFWHITE} material="ceramic" radius={0.015} />
     </group>
   )
 }

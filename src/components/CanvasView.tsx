@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useAppStore } from '../store/useAppStore'
 import { getFurniture } from '../furniture'
 import type { Furniture } from '../types'
 import Scene3D from './Scene3D'
+import { readFurnitureType } from '../dnd'
 
 const SCALE = 60 // 1 米 = 60 像素
 
@@ -14,34 +15,93 @@ interface DragState {
   startZ: number
 }
 
+interface RotateState {
+  id: string
+  cx: number
+  cz: number
+  startAngle: number
+  startRot: number
+}
+
 function Plan2D() {
   const plan = useAppStore((s) => s.plan)!
   const selected = useAppStore((s) => s.selectedFurniture)
   const onSelect = useAppStore((s) => s.setSelectedFurniture)
   const updateFurniture = useAppStore((s) => s.updateFurniture)
+  const addFurniture = useAppStore((s) => s.addFurniture)
   const [drag, setDrag] = useState<DragState | null>(null)
+  const [rotating, setRotating] = useState<RotateState | null>(null)
+  const svgRef = useRef<SVGSVGElement>(null)
 
   const W = plan.room_bounds.w
   const D = plan.room_bounds.d
-  const rotDeg = (f: Furniture) => ((f.rot ?? 0) * 180) / Math.PI
+  // 2D 俯视 SVG 的 y 轴向下，与 three.js 的 Z 轴方向相反，旋转取负以对齐 3D
+  const rotDeg = (f: Furniture) => -((f.rot ?? 0) * 180) / Math.PI
 
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (!drag) return
-    const dx = (e.clientX - drag.startMouseX) / SCALE
-    const dz = (e.clientY - drag.startMouseY) / SCALE
-    updateFurniture(drag.id, { x: drag.startX + dx, z: drag.startZ + dz })
+    if (drag) {
+      const dx = (e.clientX - drag.startMouseX) / SCALE
+      const dz = (e.clientY - drag.startMouseY) / SCALE
+      updateFurniture(drag.id, { x: drag.startX + dx, z: drag.startZ + dz })
+    } else if (rotating) {
+      const svg = svgRef.current
+      if (!svg) return
+      const rect = svg.getBoundingClientRect()
+      const angle = Math.atan2(
+        e.clientY - rect.top - rotating.cz,
+        e.clientX - rect.left - rotating.cx,
+      )
+      let delta = angle - rotating.startAngle
+      if (delta > Math.PI) delta -= 2 * Math.PI
+      if (delta < -Math.PI) delta += 2 * Math.PI
+      updateFurniture(rotating.id, { rot: rotating.startRot - delta })
+    }
   }
 
-  const handleMouseUp = () => setDrag(null)
+  const handleMouseUp = () => {
+    setDrag(null)
+    setRotating(null)
+  }
+
+  const startRotate = (e: React.MouseEvent, f: Furniture) => {
+    e.stopPropagation()
+    onSelect(f.id)
+    const svg = svgRef.current
+    if (!svg) return
+    const rect = svg.getBoundingClientRect()
+    const cx = f.x * SCALE
+    const cz = f.z * SCALE
+    const angle = Math.atan2(e.clientY - rect.top - cz, e.clientX - rect.left - cx)
+    setRotating({ id: f.id, cx, cz, startAngle: angle, startRot: f.rot ?? 0 })
+  }
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'copy'
+  }
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    const type = readFurnitureType(e.dataTransfer)
+    if (!type) return
+    const rect = e.currentTarget.getBoundingClientRect()
+    const x = (e.clientX - rect.left) / SCALE
+    const z = (e.clientY - rect.top) / SCALE
+    addFurniture(type, x, z)
+  }
 
   return (
     <svg
+      ref={svgRef}
       width={W * SCALE}
       height={D * SCALE}
       className="plan-2d"
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
     >
       <g transform={`scale(${SCALE})`}>
         <rect x={0} y={0} width={W} height={D} fill={plan.palette.floor} />
@@ -80,15 +140,27 @@ function Plan2D() {
             >
               <Plan f={f} selected={isSel} />
               {isSel && (
-                <rect
-                  x={-f.w / 2}
-                  y={-f.d / 2}
-                  width={f.w}
-                  height={f.d}
-                  fill="none"
-                  stroke="#ff9500"
-                  strokeWidth={0.06}
-                />
+                <>
+                  <rect
+                    x={-f.w / 2}
+                    y={-f.d / 2}
+                    width={f.w}
+                    height={f.d}
+                    fill="none"
+                    stroke="#ff9500"
+                    strokeWidth={0.06}
+                  />
+                  <circle
+                    cx={0}
+                    cy={-f.d / 2 - 0.35}
+                    r={0.14}
+                    fill="#ff9500"
+                    stroke="#fff"
+                    strokeWidth={0.04}
+                    style={{ cursor: 'grab' }}
+                    onMouseDown={(e) => startRotate(e, f)}
+                  />
+                </>
               )}
             </g>
           )
@@ -106,7 +178,25 @@ export default function CanvasView() {
   const onSelect = useAppStore((s) => s.setSelectedFurniture)
   const updateFurniture = useAppStore((s) => s.updateFurniture)
   const removeFurniture = useAppStore((s) => s.removeFurniture)
+  const addFurniture = useAppStore((s) => s.addFurniture)
+  const newCanvas = useAppStore((s) => s.newCanvas)
   const generating = useAppStore((s) => s.generating)
+  const [dragOver, setDragOver] = useState(false)
+
+  const handleStageDragOver = (e: React.DragEvent) => {
+    if (!readFurnitureType(e.dataTransfer)) return
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'copy'
+    setDragOver(true)
+  }
+  const handleStageDragLeave = () => setDragOver(false)
+  const handleStageDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    setDragOver(false)
+    const type = readFurnitureType(e.dataTransfer)
+    if (!type) return
+    addFurniture(type) // 兜底：放中心（2D/3D 的精确落点由各自视图处理）
+  }
 
   const rotateSelected = (deltaDeg: number) => {
     if (!plan || !selected) return
@@ -159,7 +249,12 @@ export default function CanvasView() {
         )}
       </div>
 
-      <div className="canvas-stage">
+      <div
+        className={`canvas-stage${dragOver ? ' drag-over' : ''}`}
+        onDragOver={handleStageDragOver}
+        onDragLeave={handleStageDragLeave}
+        onDrop={handleStageDrop}
+      >
         {generating && (
           <div className="canvas-loading">
             <div className="spinner" />
@@ -171,6 +266,10 @@ export default function CanvasView() {
             <div className="empty-icon">🛋️</div>
             <p>在右侧输入描述，让 AI 为你生成一套设计方案</p>
             <p className="empty-hint">支持：现代简约 / 北欧 / 新中式 / 轻奢</p>
+            <button className="btn primary" onClick={newCanvas}>
+              新建空白画布
+            </button>
+            <p className="empty-hint">或从左侧拖拽家具到画布，直接开始设计</p>
           </div>
         )}
         {plan && view === '3d' && <Scene3D plan={plan} selected={selected} onSelect={onSelect} />}

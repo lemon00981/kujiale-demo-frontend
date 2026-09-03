@@ -6,12 +6,12 @@ function Three({ f }: FurnitureRenderProps) {
   return (
     <group>
       {/* 柜体 */}
-      <Box pos={[0, h / 2, 0]} size={[w, h, d]} color={WOOD} />
+      <Box pos={[0, h / 2, 0]} size={[w, h, d]} color={WOOD} material="wood" radius={0.02} />
       {/* 中间门缝 */}
-      <Box pos={[0, h / 2, d / 2 + 0.005]} size={[0.02, h - 0.05, 0.01]} color={darken(WOOD, 0.6)} />
+      <Box pos={[0, h / 2, d / 2 + 0.005]} size={[0.02, h - 0.05, 0.01]} color={darken(WOOD, 0.6)} material="wood" />
       {/* 两个把手 */}
-      <Cylinder pos={[-w / 4, h * 0.5, d / 2 + 0.03]} radiusTop={0.015} radiusBottom={0.015} height={0.05} color={METAL} />
-      <Cylinder pos={[w / 4, h * 0.5, d / 2 + 0.03]} radiusTop={0.015} radiusBottom={0.015} height={0.05} color={METAL} />
+      <Cylinder pos={[-w / 4, h * 0.5, d / 2 + 0.03]} radiusTop={0.015} radiusBottom={0.015} height={0.05} color={METAL} material="metal" />
+      <Cylinder pos={[w / 4, h * 0.5, d / 2 + 0.03]} radiusTop={0.015} radiusBottom={0.015} height={0.05} color={METAL} material="metal" />
     </group>
   )
 }

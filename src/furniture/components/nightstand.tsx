@@ -5,9 +5,9 @@ function Three({ f }: FurnitureRenderProps) {
   const { w, d, h } = f
   return (
     <group>
-      <Box pos={[0, h * 0.42, 0]} size={[w, h * 0.64, d]} color={WOOD} />
+      <Box pos={[0, h * 0.42, 0]} size={[w, h * 0.64, d]} color={WOOD} material="wood" radius={0.02} />
       {/* 抽屉线 */}
-      <Box pos={[0, h * 0.62, -d / 2 + 0.005]} size={[w * 0.7, 0.06, 0.005]} color={darken(WOOD, 0.7)} />
+      <Box pos={[0, h * 0.62, -d / 2 + 0.005]} size={[w * 0.7, 0.06, 0.005]} color={darken(WOOD, 0.7)} material="wood" />
       {[
         [-1, -1],
         [1, -1],
@@ -21,6 +21,7 @@ function Three({ f }: FurnitureRenderProps) {
           radiusBottom={0.02}
           height={h * 0.16}
           color={darken(WOOD, 0.8)}
+          material="wood"
         />
       ))}
     </group>

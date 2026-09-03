@@ -10,12 +10,12 @@ function Three({ f }: FurnitureRenderProps) {
   return (
     <group>
       {/* 底座 / 坐垫 */}
-      <Box pos={[0, seatH / 2, 0]} size={[w - armW * 2, seatH, d]} color={c} />
+      <Box pos={[0, seatH / 2, 0]} size={[w - armW * 2, seatH, d]} color={c} material="fabric" radius={0.06} />
       {/* 靠背 */}
-      <Box pos={[0, seatH + backH / 2, -d / 2 + 0.09]} size={[w, backH, 0.18]} color={darken(c, 0.85)} />
+      <Box pos={[0, seatH + backH / 2, -d / 2 + 0.09]} size={[w, backH, 0.18]} color={darken(c, 0.85)} material="fabric" radius={0.05} />
       {/* 双扶手 */}
-      <Box pos={[w / 2 - armW / 2, seatH + h * 0.1, 0]} size={[armW, h * 0.5, d]} color={darken(c, 0.9)} />
-      <Box pos={[-w / 2 + armW / 2, seatH + h * 0.1, 0]} size={[armW, h * 0.5, d]} color={darken(c, 0.9)} />
+      <Box pos={[w / 2 - armW / 2, seatH + h * 0.1, 0]} size={[armW, h * 0.5, d]} color={darken(c, 0.9)} material="fabric" radius={0.04} />
+      <Box pos={[-w / 2 + armW / 2, seatH + h * 0.1, 0]} size={[armW, h * 0.5, d]} color={darken(c, 0.9)} material="fabric" radius={0.04} />
       {/* 4 条腿 */}
       {[
         [-1, -1],
@@ -30,6 +30,7 @@ function Three({ f }: FurnitureRenderProps) {
           radiusBottom={0.028}
           height={0.14}
           color={METAL}
+          material="metal"
         />
       ))}
     </group>

@@ -8,15 +8,15 @@ function Three({ f }: FurnitureRenderProps) {
   return (
     <group>
       {/* 左右侧板 */}
-      <Box pos={[-w / 2 + t / 2, h / 2, 0]} size={[t, h, d]} color={WOOD} />
-      <Box pos={[w / 2 - t / 2, h / 2, 0]} size={[t, h, d]} color={WOOD} />
+      <Box pos={[-w / 2 + t / 2, h / 2, 0]} size={[t, h, d]} color={WOOD} material="wood" />
+      <Box pos={[w / 2 - t / 2, h / 2, 0]} size={[t, h, d]} color={WOOD} material="wood" />
       {/* 顶底板 */}
-      <Box pos={[0, h - t / 2, 0]} size={[w, t, d]} color={WOOD} />
-      <Box pos={[0, t / 2, 0]} size={[w, t, d]} color={WOOD} />
+      <Box pos={[0, h - t / 2, 0]} size={[w, t, d]} color={WOOD} material="wood" />
+      <Box pos={[0, t / 2, 0]} size={[w, t, d]} color={WOOD} material="wood" />
       {/* 隔板 */}
       {Array.from({ length: shelfCount }).map((_, i) => {
         const y = ((i + 1) / (shelfCount + 1)) * h
-        return <Box key={i} pos={[0, y, 0]} size={[w - t * 2, 0.03, d]} color={darken(WOOD, 0.9)} />
+        return <Box key={i} pos={[0, y, 0]} size={[w - t * 2, 0.03, d]} color={darken(WOOD, 0.9)} material="wood" />
       })}
     </group>
   )

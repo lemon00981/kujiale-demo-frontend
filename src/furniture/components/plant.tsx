@@ -7,9 +7,9 @@ function Three({ f }: FurnitureRenderProps) {
   return (
     <group>
       {/* 花盆 */}
-      <Cylinder pos={[0, potH / 2, 0]} radiusTop={0.15} radiusBottom={0.11} height={potH} color="#c97b52" />
+      <Cylinder pos={[0, potH / 2, 0]} radiusTop={0.15} radiusBottom={0.11} height={potH} color="#c97b52" material="ceramic" />
       {/* 树干 */}
-      <Cylinder pos={[0, potH + 0.15, 0]} radiusTop={0.03} radiusBottom={0.04} height={0.3} color="#7a5b43" />
+      <Cylinder pos={[0, potH + 0.15, 0]} radiusTop={0.03} radiusBottom={0.04} height={0.3} color="#7a5b43" material="wood" />
       {/* 树冠 */}
       <mesh position={[0, potH + 0.42, 0]} castShadow>
         <sphereGeometry args={[0.24, 20, 16]} />

@@ -5,7 +5,7 @@ function Three({ f }: FurnitureRenderProps) {
   const { w, d, h } = f
   return (
     <group>
-      <Box pos={[0, h - 0.04, 0]} size={[w, 0.08, d]} color={WOOD} />
+      <Box pos={[0, h - 0.04, 0]} size={[w, 0.08, d]} color={WOOD} material="wood" radius={0.03} />
       {[
         [-1, -1],
         [1, -1],
@@ -19,6 +19,7 @@ function Three({ f }: FurnitureRenderProps) {
           radiusBottom={0.03}
           height={h - 0.08}
           color={WOOD}
+          material="metal"
         />
       ))}
     </group>

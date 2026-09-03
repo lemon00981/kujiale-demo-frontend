@@ -6,9 +6,9 @@ function Three({ f }: FurnitureRenderProps) {
   return (
     <group>
       {/* 桌面 */}
-      <Box pos={[0, h - 0.03, 0]} size={[w, 0.06, d]} color={WOOD} />
+      <Box pos={[0, h - 0.03, 0]} size={[w, 0.06, d]} color={WOOD} material="wood" radius={0.02} />
       {/* 抽屉 */}
-      <Box pos={[0, h - 0.16, -d / 2 + 0.15]} size={[w * 0.5, 0.2, 0.3]} color={darken(WOOD, 0.85)} />
+      <Box pos={[0, h - 0.16, -d / 2 + 0.15]} size={[w * 0.5, 0.2, 0.3]} color={darken(WOOD, 0.85)} material="wood" radius={0.02} />
       {/* 4 条腿 */}
       {[
         [-1, -1],
@@ -23,6 +23,7 @@ function Three({ f }: FurnitureRenderProps) {
           radiusBottom={0.025}
           height={h - 0.06}
           color={darken(WOOD, 0.8)}
+          material="wood"
         />
       ))}
     </group>

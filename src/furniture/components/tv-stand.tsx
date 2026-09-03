@@ -6,13 +6,13 @@ function Three({ f }: FurnitureRenderProps) {
   return (
     <group>
       {/* 柜体 */}
-      <Box pos={[0, h * 0.55, 0]} size={[w, h * 0.7, d]} color={WOOD} />
+      <Box pos={[0, h * 0.55, 0]} size={[w, h * 0.7, d]} color={WOOD} material="wood" />
       {/* 台面 */}
-      <Box pos={[0, h - 0.02, 0]} size={[w + 0.06, 0.04, d + 0.06]} color={darken(WOOD, 0.85)} />
+      <Box pos={[0, h - 0.02, 0]} size={[w + 0.06, 0.04, d + 0.06]} color={darken(WOOD, 0.85)} material="wood" radius={0.02} />
       {/* 柜门线 */}
-      <Box pos={[0, h * 0.55, d / 2 + 0.005]} size={[0.02, h * 0.6, 0.01]} color={darken(WOOD, 0.6)} />
-      <Box pos={[-w / 4, h * 0.55, d / 2 + 0.005]} size={[w * 0.42, 0.06, 0.01]} color={darken(WOOD, 0.6)} />
-      <Box pos={[w / 4, h * 0.55, d / 2 + 0.005]} size={[w * 0.42, 0.06, 0.01]} color={darken(WOOD, 0.6)} />
+      <Box pos={[0, h * 0.55, d / 2 + 0.005]} size={[0.02, h * 0.6, 0.01]} color={darken(WOOD, 0.6)} material="wood" />
+      <Box pos={[-w / 4, h * 0.55, d / 2 + 0.005]} size={[w * 0.42, 0.06, 0.01]} color={darken(WOOD, 0.6)} material="wood" />
+      <Box pos={[w / 4, h * 0.55, d / 2 + 0.005]} size={[w * 0.42, 0.06, 0.01]} color={darken(WOOD, 0.6)} material="wood" />
     </group>
   )
 }

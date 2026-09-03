@@ -170,6 +170,7 @@ body {
 
 .side-list li.clickable {
   cursor: pointer;
+  user-select: none;
 }
 
 .side-list li.clickable:hover {
@@ -246,6 +247,12 @@ body {
   background: #eef1f5;
 }
 
+.canvas-stage.drag-over {
+  outline: 3px dashed var(--primary);
+  outline-offset: -8px;
+  background: #eef4ff;
+}
+
 .canvas-empty,
 .canvas-loading {
   position: absolute;
@@ -320,6 +327,7 @@ body {
   font-size: 13px;
   color: var(--muted);
   border-bottom: 2px solid transparent;
+  user-select: none;
 }
 
 .tabs button.active {
@@ -682,7 +690,8 @@ body {
 }
 
 .furniture-chip.lib {
-  cursor: pointer;
+  cursor: grab;
+  user-select: none;
   border: 1px solid var(--border);
   background: #fff;
   color: var(--text);

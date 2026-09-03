@@ -11,8 +11,36 @@ import type {
   FloorPlanResult,
   Furniture,
   HouseType,
+  Room,
   ViewMode,
 } from '../types'
+
+/** 空白画布的默认方案（未命名、无房间、无家具） */
+function blankPlan(): DesignPlan {
+  return {
+    title: '未命名方案',
+    style: '现代简约',
+    area: 48,
+    description: '自由设计',
+    room_bounds: { w: 8, d: 6 },
+    rooms: [],
+    furniture: [],
+    palette: { wall: '#f5f0e8', floor: '#d9c7a7', accent: '#b89b6a', text: '#2f2a26' },
+    materials: [],
+    lighting: [],
+    summary: '空白画布，从左侧拖拽家具开始自由设计。',
+  }
+}
+
+/** 户型房间的 3×2 网格布局（8m×6m 地板，最多 6 个房间，按顺序排布） */
+const ROOM_CELLS = [
+  { x: 0, z: 0, w: 3, d: 3 },
+  { x: 3, z: 0, w: 2.5, d: 3 },
+  { x: 5.5, z: 0, w: 2.5, d: 3 },
+  { x: 0, z: 3, w: 3, d: 3 },
+  { x: 3, z: 3, w: 2.5, d: 3 },
+  { x: 5.5, z: 3, w: 2.5, d: 3 },
+]
 
 interface AppState {
   plan: DesignPlan | null
@@ -32,7 +60,9 @@ interface AppState {
   applyPlan: (plan: DesignPlan) => void
   updateFurniture: (id: string, patch: Partial<Furniture>) => void
   removeFurniture: (id: string) => void
-  addFurniture: (type: string) => void
+  addFurniture: (type: string, x?: number, z?: number) => void
+  newCanvas: () => void
+  applyHouseType: (ht: HouseType) => void
   showToast: (msg: string) => void
 
   generateDesign: (description: string, area: number, style?: string) => Promise<void>
@@ -84,28 +114,79 @@ export const useAppStore = create<AppState>((set, get) => ({
     })
   },
 
-  addFurniture: (type) => {
-    const plan = get().plan
-    if (!plan) return
+  addFurniture: (type, x, z) => {
+    // 没有画布时先建一张空白画布，方便直接拖拽设计
+    const plan = get().plan ?? blankPlan()
     const def = getFurniture(type)
+    const W = plan.room_bounds.w
+    const D = plan.room_bounds.d
     const id = `f${Date.now()}${Math.floor(Math.random() * 1000)}`
     const newF: Furniture = {
       id,
       name: def.name,
       category: def.type,
       room: '自定义',
-      x: plan.room_bounds.w / 2,
-      z: plan.room_bounds.d / 2,
+      x: x ?? W / 2,
+      z: z ?? D / 2,
       w: def.defaultSize.w,
       d: def.defaultSize.d,
       h: def.defaultSize.h,
       color: def.defaultColor,
+      y: 0,
       rot: 0,
     }
+    // 限制在画布范围内
+    newF.x = Math.min(Math.max(newF.x, newF.w / 2), W - newF.w / 2)
+    newF.z = Math.min(Math.max(newF.z, newF.d / 2), D - newF.d / 2)
     set({
       plan: { ...plan, furniture: [...plan.furniture, newF] },
       selectedFurniture: id,
     })
+  },
+
+  newCanvas: () => {
+    set({ plan: blankPlan(), selectedFurniture: null })
+    get().showToast('已新建空白画布，拖拽左侧家具开始设计')
+  },
+
+  applyHouseType: (ht) => {
+    let rawRooms: unknown[] = []
+    try {
+      const layout = JSON.parse(ht.layoutJson)
+      if (Array.isArray(layout.rooms)) rawRooms = layout.rooms
+    } catch {
+      rawRooms = []
+    }
+    // 兼容两种 layoutJson：新格式是 [{name,x,z,w,d}]，旧格式是 ["客厅",...] 字符串数组
+    const rooms: Room[] = rawRooms.map((r, i) => {
+      const cell = ROOM_CELLS[i] ?? { x: 0, z: 0, w: 2, d: 2 }
+      if (typeof r === 'object' && r !== null) {
+        const o = r as Record<string, unknown>
+        return {
+          name: typeof o.name === 'string' ? o.name : `房间${i + 1}`,
+          x: typeof o.x === 'number' ? o.x : cell.x,
+          z: typeof o.z === 'number' ? o.z : cell.z,
+          w: typeof o.w === 'number' ? o.w : cell.w,
+          d: typeof o.d === 'number' ? o.d : cell.d,
+        }
+      }
+      return { name: String(r), ...cell }
+    })
+    const plan: DesignPlan = {
+      title: `${ht.name} · 空户型`,
+      style: '现代简约',
+      area: ht.area,
+      description: `户型：${ht.name}`,
+      room_bounds: { w: 8, d: 6 },
+      rooms,
+      furniture: [],
+      palette: { wall: '#f5f0e8', floor: '#d9c7a7', accent: '#b89b6a', text: '#2f2a26' },
+      materials: [],
+      lighting: [],
+      summary: `${ht.name} 空户型，从左侧拖拽家具开始设计。`,
+    }
+    set({ plan, selectedFurniture: null })
+    get().showToast(`已载入户型「${ht.name}」`)
   },
 
   showToast: (msg) => {

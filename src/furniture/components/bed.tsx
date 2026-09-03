@@ -6,14 +6,14 @@ function Three({ f }: FurnitureRenderProps) {
   return (
     <group>
       {/* 床架 */}
-      <Box pos={[0, h * 0.28, 0]} size={[w, h * 0.56, d]} color={darken(f.color, 0.7)} />
+      <Box pos={[0, h * 0.28, 0]} size={[w, h * 0.56, d]} color={darken(f.color, 0.7)} material="fabric" radius={0.04} />
       {/* 床垫 */}
-      <Box pos={[0, h * 0.52, 0.04]} size={[w - 0.08, h * 0.3, d - 0.12]} color={OFFWHITE} />
+      <Box pos={[0, h * 0.52, 0.04]} size={[w - 0.08, h * 0.3, d - 0.12]} color={OFFWHITE} material="fabric" radius={0.05} />
       {/* 床头板 */}
-      <Box pos={[0, h * 0.7, -d / 2 + 0.05]} size={[w, h * 1.2, 0.1]} color={WOOD} />
+      <Box pos={[0, h * 0.7, -d / 2 + 0.05]} size={[w, h * 1.2, 0.1]} color={WOOD} material="wood" radius={0.04} />
       {/* 枕头 */}
-      <Box pos={[w * 0.16, h * 0.68, -d / 2 + 0.28]} size={[0.5, 0.1, 0.38]} color={OFFWHITE} />
-      <Box pos={[-w * 0.16, h * 0.68, -d / 2 + 0.28]} size={[0.5, 0.1, 0.38]} color={OFFWHITE} />
+      <Box pos={[w * 0.16, h * 0.68, -d / 2 + 0.28]} size={[0.5, 0.1, 0.38]} color={OFFWHITE} material="fabric" radius={0.04} />
+      <Box pos={[-w * 0.16, h * 0.68, -d / 2 + 0.28]} size={[0.5, 0.1, 0.38]} color={OFFWHITE} material="fabric" radius={0.04} />
     </group>
   )
 }

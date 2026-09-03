@@ -20,6 +20,8 @@ import plant from './components/plant'
 import rug from './components/rug'
 import toilet from './components/toilet'
 import sink from './components/sink'
+import television from './components/television'
+import televisionWall from './components/televisionWall'
 
 const builtin = [
   sofa,
@@ -38,6 +40,8 @@ const builtin = [
   rug,
   toilet,
   sink,
+  television,
+  televisionWall,
 ]
 
 builtin.forEach(registerFurniture)

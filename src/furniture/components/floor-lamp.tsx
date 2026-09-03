@@ -7,11 +7,11 @@ function Three({ f }: FurnitureRenderProps) {
   return (
     <group>
       {/* 底座 */}
-      <Cylinder pos={[0, 0.02, 0]} radiusTop={0.12} radiusBottom={0.14} height={0.04} color={METAL} />
+      <Cylinder pos={[0, 0.02, 0]} radiusTop={0.12} radiusBottom={0.14} height={0.04} color={METAL} material="metal" />
       {/* 灯杆 */}
-      <Cylinder pos={[0, 0.04 + (h - shadeH) / 2, 0]} radiusTop={0.016} radiusBottom={0.016} height={h - shadeH} color={METAL} />
+      <Cylinder pos={[0, 0.04 + (h - shadeH) / 2, 0]} radiusTop={0.016} radiusBottom={0.016} height={h - shadeH} color={METAL} material="metal" />
       {/* 灯罩（倒梯形） */}
-      <Cylinder pos={[0, h - shadeH / 2, 0]} radiusTop={0.07} radiusBottom={0.16} height={shadeH} color={f.color} />
+      <Cylinder pos={[0, h - shadeH / 2, 0]} radiusTop={0.07} radiusBottom={0.16} height={shadeH} color={f.color} material="fabric" />
     </group>
   )
 }

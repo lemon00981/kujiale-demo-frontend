@@ -1,4 +1,7 @@
+import { useEffect, useMemo } from 'react'
 import type { CSSProperties } from 'react'
+import { BoxGeometry } from 'three'
+import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js'
 
 /**
  * 写组件用的公共工具：
@@ -39,6 +42,38 @@ export const OFFWHITE = '#f2efe8'
 export const GREEN = '#5a7d5a'
 
 /**
+ * 材质定义：一组 PBR 参数，控制物体的粗糙度 / 金属感 / 透明度。
+ * 内置了常用材质，也可以直接传一个自定义对象（见 README「材质」一节）。
+ */
+export interface MaterialDef {
+  roughness: number
+  metalness: number
+  transparent?: boolean
+  opacity?: number
+}
+
+export const MATERIALS: Record<string, MaterialDef> = {
+  fabric: { roughness: 0.9, metalness: 0 }, // 布艺 / 绒面
+  leather: { roughness: 0.45, metalness: 0.1 }, // 皮革
+  wood: { roughness: 0.55, metalness: 0.05 }, // 木质
+  metal: { roughness: 0.25, metalness: 0.9 }, // 金属
+  glass: { roughness: 0.05, metalness: 0, transparent: true, opacity: 0.35 }, // 玻璃
+  ceramic: { roughness: 0.2, metalness: 0 }, // 陶瓷 / 洁具
+  plastic: { roughness: 0.4, metalness: 0 }, // 塑料 / 烤漆
+  matte: { roughness: 0.7, metalness: 0.05 }, // 默认哑光（旧样式）
+}
+
+export type MaterialKey = keyof typeof MATERIALS
+
+/** 材质入参：可以是内置 key，也可以直接传自定义参数对象 */
+export type MaterialInput = MaterialKey | MaterialDef
+
+function resolveMaterial(m?: MaterialInput): MaterialDef {
+  if (!m) return MATERIALS.matte
+  return typeof m === 'string' ? MATERIALS[m] : m
+}
+
+/**
  * 一个小 helper：生成一个盒子的 JSX，减少组件里重复的 <mesh>。
  * 位置约定：pos 是盒子中心点（y 已含高度一半）。
  */
@@ -46,20 +81,34 @@ export function Box({
   pos,
   size,
   color,
+  material,
+  radius = 0,
   selected = false,
 }: {
   pos: [number, number, number]
   size: [number, number, number]
   color: string
+  material?: MaterialInput
+  /** 圆角半径（米），>0 时边缘变圆润，0 为直角 */
+  radius?: number
   selected?: boolean
 }) {
+  const m = resolveMaterial(material)
+  const [w, h, d] = size
+  const geometry = useMemo(
+    () => (radius > 0 ? new RoundedBoxGeometry(w, h, d, 3, radius) : new BoxGeometry(w, h, d)),
+    [w, h, d, radius],
+  )
+  useEffect(() => () => geometry.dispose(), [geometry])
   return (
     <mesh position={pos} castShadow receiveShadow>
-      <boxGeometry args={size} />
+      <primitive object={geometry} attach="geometry" />
       <meshStandardMaterial
         color={selected ? '#ff9500' : color}
-        roughness={0.7}
-        metalness={0.05}
+        roughness={m.roughness}
+        metalness={m.metalness}
+        transparent={m.transparent}
+        opacity={m.opacity}
       />
     </mesh>
   )
@@ -72,6 +121,7 @@ export function Cylinder({
   radiusBottom,
   height,
   color,
+  material,
   selected = false,
 }: {
   pos: [number, number, number]
@@ -79,15 +129,19 @@ export function Cylinder({
   radiusBottom: number
   height: number
   color: string
+  material?: MaterialInput
   selected?: boolean
 }) {
+  const m = resolveMaterial(material)
   return (
     <mesh position={pos} castShadow receiveShadow>
       <cylinderGeometry args={[radiusTop, radiusBottom, height, 24]} />
       <meshStandardMaterial
         color={selected ? '#ff9500' : color}
-        roughness={0.7}
-        metalness={0.05}
+        roughness={m.roughness}
+        metalness={m.metalness}
+        transparent={m.transparent}
+        opacity={m.opacity}
       />
     </mesh>
   )
@@ -97,7 +151,6 @@ export function Cylinder({
 export function planFill(color: string, selected?: boolean): CSSProperties {
   return {
     fill: selected ? '#ff9500' : color,
-    stroke: 'rgba(0,0,0,0.25)',
-    strokeWidth: 1,
+    stroke: 'none',
   }
 }
