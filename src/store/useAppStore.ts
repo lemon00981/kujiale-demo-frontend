@@ -53,11 +53,12 @@ interface AppState {
   selectedFurniture: string | null
   houseTypes: HouseType[]
   designs: Design[]
+  editingDesignId: number | null
   toast: string | null
 
   setView: (v: ViewMode) => void
   setSelectedFurniture: (id: string | null) => void
-  applyPlan: (plan: DesignPlan) => void
+  applyPlan: (plan: DesignPlan, designId?: number) => void
   updateFurniture: (id: string, patch: Partial<Furniture>) => void
   removeFurniture: (id: string) => void
   addFurniture: (type: string, x?: number, z?: number) => void
@@ -72,6 +73,10 @@ interface AppState {
   saveDesign: () => Promise<void>
   loadHouseTypes: () => Promise<void>
   loadDesigns: () => Promise<void>
+  updateHouseType: (id: number, payload: { name?: string; area?: number; layoutJson?: string }) => Promise<void>
+  deleteHouseType: (id: number) => Promise<void>
+  updateDesign: (id: number, payload: { title?: string; style?: string }) => Promise<void>
+  deleteDesign: (id: number) => Promise<void>
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -85,11 +90,13 @@ export const useAppStore = create<AppState>((set, get) => ({
   selectedFurniture: null,
   houseTypes: [],
   designs: [],
+  editingDesignId: null,
   toast: null,
 
   setView: (v) => set({ view: v }),
   setSelectedFurniture: (id) => set({ selectedFurniture: id }),
-  applyPlan: (plan) => set({ plan, selectedFurniture: null }),
+  applyPlan: (plan, designId) =>
+    set({ plan, selectedFurniture: null, editingDesignId: designId ?? null }),
 
   updateFurniture: (id, patch) => {
     const plan = get().plan
@@ -145,7 +152,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   newCanvas: () => {
-    set({ plan: blankPlan(), selectedFurniture: null })
+    set({ plan: blankPlan(), selectedFurniture: null, editingDesignId: null })
     get().showToast('已新建空白画布，拖拽左侧家具开始设计')
   },
 
@@ -185,7 +192,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       lighting: [],
       summary: `${ht.name} 空户型，从左侧拖拽家具开始设计。`,
     }
-    set({ plan, selectedFurniture: null })
+    set({ plan, selectedFurniture: null, editingDesignId: null })
     get().showToast(`已载入户型「${ht.name}」`)
   },
 
@@ -200,7 +207,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({ generating: true })
     try {
       const plan = await aiApi.generateDesign(description, area, style)
-      set({ plan, selectedFurniture: null })
+      set({ plan, selectedFurniture: null, editingDesignId: null })
     } catch (e) {
       get().showToast('生成失败，请确认 AI 服务已启动')
     } finally {
@@ -252,15 +259,23 @@ export const useAppStore = create<AppState>((set, get) => ({
       get().showToast('请先生成方案')
       return
     }
+    const payload = {
+      title: plan.title,
+      style: plan.style,
+      prompt: plan.description,
+      planJson: JSON.stringify(plan),
+      thumbnail: plan.palette.accent,
+    }
     try {
-      await designApi.saveDesign({
-        title: plan.title,
-        style: plan.style,
-        prompt: plan.description,
-        planJson: JSON.stringify(plan),
-        thumbnail: plan.palette.accent,
-      })
-      get().showToast('方案已保存')
+      const editingId = get().editingDesignId
+      if (editingId != null) {
+        // 正在编辑已有方案 → 更新而不是新增
+        await designApi.updateDesign(editingId, payload)
+        get().showToast('方案已更新')
+      } else {
+        await designApi.saveDesign(payload)
+        get().showToast('方案已保存')
+      }
       await get().loadDesigns()
     } catch (e) {
       get().showToast('保存失败，请确认后端服务已启动')
@@ -280,6 +295,47 @@ export const useAppStore = create<AppState>((set, get) => ({
       set({ designs: await designApi.listDesigns() })
     } catch {
       // 后端未启动时静默
+    }
+  },
+
+  updateHouseType: async (id, payload) => {
+    try {
+      await designApi.updateHouseType(id, payload)
+      get().showToast('户型已更新')
+      await get().loadHouseTypes()
+    } catch {
+      get().showToast('更新户型失败')
+    }
+  },
+
+  deleteHouseType: async (id) => {
+    try {
+      await designApi.deleteHouseType(id)
+      get().showToast('户型已删除')
+      await get().loadHouseTypes()
+    } catch {
+      get().showToast('删除户型失败')
+    }
+  },
+
+  updateDesign: async (id, payload) => {
+    try {
+      await designApi.updateDesign(id, payload)
+      get().showToast('方案已更新')
+      await get().loadDesigns()
+    } catch {
+      get().showToast('更新方案失败')
+    }
+  },
+
+  deleteDesign: async (id) => {
+    try {
+      await designApi.deleteDesign(id)
+      if (get().editingDesignId === id) set({ editingDesignId: null })
+      get().showToast('方案已删除')
+      await get().loadDesigns()
+    } catch {
+      get().showToast('删除方案失败')
     }
   },
 }))

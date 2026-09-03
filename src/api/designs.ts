@@ -37,3 +37,23 @@ export async function saveDesign(payload: {
 export async function deleteDesign(id: number): Promise<void> {
   await http.delete(`/designs/${id}`)
 }
+
+export async function updateDesign(
+  id: number,
+  payload: Partial<Pick<Design, 'title' | 'style' | 'prompt' | 'planJson' | 'thumbnail'>>,
+): Promise<Design> {
+  const { data } = await http.put<ApiEnvelope<Design>>(`/designs/${id}`, payload)
+  return data.data
+}
+
+export async function updateHouseType(
+  id: number,
+  payload: { name?: string; area?: number; layoutJson?: string },
+): Promise<HouseType> {
+  const { data } = await http.put<ApiEnvelope<HouseType>>(`/house-types/${id}`, payload)
+  return data.data
+}
+
+export async function deleteHouseType(id: number): Promise<void> {
+  await http.delete(`/house-types/${id}`)
+}

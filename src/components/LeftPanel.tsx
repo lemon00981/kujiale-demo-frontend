@@ -1,7 +1,7 @@
 import { useAppStore } from '../store/useAppStore'
 import { listFurniture } from '../furniture'
 import type { FurnitureComponentDef } from '../furniture'
-import type { Design } from '../types'
+import type { Design, HouseType } from '../types'
 import { FURNITURE_DND_TYPE } from '../dnd'
 
 export default function LeftPanel() {
@@ -10,11 +10,15 @@ export default function LeftPanel() {
   const applyPlan = useAppStore((s) => s.applyPlan)
   const addFurniture = useAppStore((s) => s.addFurniture)
   const applyHouseType = useAppStore((s) => s.applyHouseType)
+  const updateHouseType = useAppStore((s) => s.updateHouseType)
+  const deleteHouseType = useAppStore((s) => s.deleteHouseType)
+  const updateDesign = useAppStore((s) => s.updateDesign)
+  const deleteDesign = useAppStore((s) => s.deleteDesign)
   const showToast = useAppStore((s) => s.showToast)
 
   const loadDesign = (d: Design) => {
     try {
-      applyPlan(JSON.parse(d.planJson))
+      applyPlan(JSON.parse(d.planJson), d.id)
     } catch {
       showToast('方案数据无法解析')
     }
@@ -25,6 +29,24 @@ export default function LeftPanel() {
   const onDragStart = (e: React.DragEvent, type: string) => {
     e.dataTransfer.setData(FURNITURE_DND_TYPE, type)
     e.dataTransfer.effectAllowed = 'copy'
+  }
+
+  const onEditHouseType = (h: HouseType) => {
+    const name = window.prompt('户型名称', h.name)
+    if (name && name.trim() && name.trim() !== h.name) updateHouseType(h.id, { name: name.trim() })
+  }
+
+  const onRemoveHouseType = (id: number) => {
+    if (window.confirm('确认删除该户型？')) deleteHouseType(id)
+  }
+
+  const onEditDesign = (d: Design) => {
+    const title = window.prompt('方案标题', d.title)
+    if (title && title.trim() && title.trim() !== d.title) updateDesign(d.id, { title: title.trim() })
+  }
+
+  const onRemoveDesign = (id: number) => {
+    if (window.confirm('确认删除该方案？')) deleteDesign(id)
   }
 
   // 按分组聚合家具库
@@ -68,6 +90,14 @@ export default function LeftPanel() {
             <li key={h.id} className="clickable" onClick={() => applyHouseType(h)}>
               <span title={h.name}>{h.name}</span>
               <em>{h.area}㎡</em>
+              <div className="side-actions" onClick={(e) => e.stopPropagation()}>
+                <button className="icon-btn" title="编辑" onClick={() => onEditHouseType(h)}>
+                  ✎
+                </button>
+                <button className="icon-btn danger" title="删除" onClick={() => onRemoveHouseType(h.id)}>
+                  🗑
+                </button>
+              </div>
             </li>
           ))}
         </ul>
@@ -81,6 +111,14 @@ export default function LeftPanel() {
             <li key={d.id} className="clickable" onClick={() => loadDesign(d)}>
               <span title={d.title}>{d.title}</span>
               <em>{d.style}</em>
+              <div className="side-actions" onClick={(e) => e.stopPropagation()}>
+                <button className="icon-btn" title="编辑" onClick={() => onEditDesign(d)}>
+                  ✎
+                </button>
+                <button className="icon-btn danger" title="删除" onClick={() => onRemoveDesign(d.id)}>
+                  🗑
+                </button>
+              </div>
             </li>
           ))}
         </ul>

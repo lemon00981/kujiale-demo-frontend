@@ -82,9 +82,11 @@ export default function Scene3D({
   const removeFurniture = useAppStore((s) => s.removeFurniture)
   const addFurniture = useAppStore((s) => s.addFurniture)
   const [mode, setMode] = useState<TransformMode>('translate')
-  const [orbitEnabled, setOrbitEnabled] = useState(true)
   const refs = useRef<Record<string, Group | null>>({})
   const stateRef = useRef<RootState | null>(null)
+  // 用 ref 直接开关 OrbitControls，避免 setState 触发重渲染打断 TransformControls 的旋转
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const orbitRef = useRef<any>(null)
 
   const W = plan.room_bounds.w
   const D = plan.room_bounds.d
@@ -174,17 +176,21 @@ export default function Scene3D({
           <TransformControls
             object={refs.current[selected]}
             mode={mode}
-            onMouseDown={() => setOrbitEnabled(false)}
+            showX={mode === 'translate'}
+            showZ={mode === 'translate'}
+            onMouseDown={() => {
+              if (orbitRef.current) orbitRef.current.enabled = false
+            }}
             onMouseUp={() => {
-              setOrbitEnabled(true)
+              if (orbitRef.current) orbitRef.current.enabled = true
               commitTransform()
             }}
           />
         )}
 
         <OrbitControls
+          ref={orbitRef}
           makeDefault
-          enabled={orbitEnabled}
           maxPolarAngle={Math.PI / 2.05}
           minDistance={2}
           maxDistance={22}
