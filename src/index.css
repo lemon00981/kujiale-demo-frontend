@@ -607,3 +607,88 @@ body {
     opacity: 1;
   }
 }
+
+/* 3D 场景与交互工具 */
+.scene3d-wrap {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.scene3d-tools {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  display: flex;
+  gap: 6px;
+  z-index: 10;
+}
+
+.scene3d-tools button {
+  border: 1px solid var(--border);
+  background: #fff;
+  border-radius: 6px;
+  padding: 5px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+.scene3d-tools button.active {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
+
+.scene3d-tools button.danger,
+.edit-tools button.danger {
+  color: #d0342c;
+  border-color: #f0c0bd;
+}
+
+.edit-tools {
+  display: flex;
+  gap: 6px;
+}
+
+.edit-tools button {
+  border: 1px solid var(--border);
+  background: #fff;
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.edit-tools button:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.hint-tag {
+  color: var(--accent);
+  font-size: 12px;
+}
+
+/* 家具库 */
+.furniture-group {
+  margin-bottom: 10px;
+}
+
+.furniture-group-title {
+  font-size: 12px;
+  color: var(--muted);
+  margin: 6px 0 4px;
+}
+
+.furniture-chip.lib {
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: #fff;
+  color: var(--text);
+}
+
+.furniture-chip.lib:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}

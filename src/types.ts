@@ -9,6 +9,8 @@ export interface Furniture {
   d: number
   h: number
   color: string
+  /** 绕 Y 轴旋转角（弧度），AI 数据无此字段，渲染时兜底 0 */
+  rot?: number
 }
 
 export interface Room {

@@ -2,12 +2,14 @@ import { create } from 'zustand'
 import * as aiApi from '../api/ai'
 import * as designApi from '../api/designs'
 import { streamChat } from '../api/stream'
+import { getFurniture } from '../furniture'
 import type {
   Advice,
   ChatMsg,
   Design,
   DesignPlan,
   FloorPlanResult,
+  Furniture,
   HouseType,
   ViewMode,
 } from '../types'
@@ -28,6 +30,9 @@ interface AppState {
   setView: (v: ViewMode) => void
   setSelectedFurniture: (id: string | null) => void
   applyPlan: (plan: DesignPlan) => void
+  updateFurniture: (id: string, patch: Partial<Furniture>) => void
+  removeFurniture: (id: string) => void
+  addFurniture: (type: string) => void
   showToast: (msg: string) => void
 
   generateDesign: (description: string, area: number, style?: string) => Promise<void>
@@ -55,6 +60,54 @@ export const useAppStore = create<AppState>((set, get) => ({
   setView: (v) => set({ view: v }),
   setSelectedFurniture: (id) => set({ selectedFurniture: id }),
   applyPlan: (plan) => set({ plan, selectedFurniture: null }),
+
+  updateFurniture: (id, patch) => {
+    const plan = get().plan
+    if (!plan) return
+    set({
+      plan: {
+        ...plan,
+        furniture: plan.furniture.map((f) => (f.id === id ? { ...f, ...patch } : f)),
+      },
+    })
+  },
+
+  removeFurniture: (id) => {
+    const plan = get().plan
+    if (!plan) return
+    set({
+      plan: {
+        ...plan,
+        furniture: plan.furniture.filter((f) => f.id !== id),
+      },
+      selectedFurniture: get().selectedFurniture === id ? null : get().selectedFurniture,
+    })
+  },
+
+  addFurniture: (type) => {
+    const plan = get().plan
+    if (!plan) return
+    const def = getFurniture(type)
+    const id = `f${Date.now()}${Math.floor(Math.random() * 1000)}`
+    const newF: Furniture = {
+      id,
+      name: def.name,
+      category: def.type,
+      room: '自定义',
+      x: plan.room_bounds.w / 2,
+      z: plan.room_bounds.d / 2,
+      w: def.defaultSize.w,
+      d: def.defaultSize.d,
+      h: def.defaultSize.h,
+      color: def.defaultColor,
+      rot: 0,
+    }
+    set({
+      plan: { ...plan, furniture: [...plan.furniture, newF] },
+      selectedFurniture: id,
+    })
+  },
+
   showToast: (msg) => {
     set({ toast: msg })
     setTimeout(() => {
