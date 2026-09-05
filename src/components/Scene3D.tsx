@@ -87,9 +87,17 @@ export default function Scene3D({
   // 用 ref 直接开关 OrbitControls，避免 setState 触发重渲染打断 TransformControls 的旋转
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const orbitRef = useRef<any>(null)
+  // TransformControls 拖动过程中的最新变换（onObjectChange 时记录，onMouseUp 时提交）
+  const pendingRef = useRef<{ x: number; y: number; z: number; rot: number } | null>(null)
 
   const W = plan.room_bounds.w
   const D = plan.room_bounds.d
+
+  // 只有可挂壁家具（电视等）平移时才显示 Y 轴手柄，其余家具不能上下移动
+  const selectedFurniture = plan.furniture.find((f) => f.id === selected)
+  const canRaise = selectedFurniture
+    ? getFurniture(selectedFurniture.category).wallMountable ?? false
+    : false
 
   // 把屏幕坐标投射到地面平面，返回画布坐标（米）
   const projectToFloor = (clientX: number, clientY: number) => {
@@ -129,13 +137,15 @@ export default function Scene3D({
     if (!selected) return
     const obj = refs.current[selected]
     if (!obj) return
-    // 只改前端，不改数据库
+    const p = pendingRef.current
+    // 优先用 onObjectChange 记录的最终值，避免 onMouseUp 时机读到的 obj 值已被 fiber 重置
     updateFurniture(selected, {
-      x: obj.position.x + W / 2,  // 中心坐标 → 左上角坐标（+W/2 映射回去）
-      y: obj.position.y,
-      z: obj.position.z + D / 2,
-      rot: obj.rotation.y,
+      x: (p ? p.x : obj.position.x) + W / 2,  // 中心坐标 → 左上角坐标（+W/2 映射回去）
+      y: p ? p.y : obj.position.y,
+      z: (p ? p.z : obj.position.z) + D / 2,
+      rot: p ? p.rot : obj.rotation.y,
     })
+    pendingRef.current = null
   }
 
   return (
@@ -182,14 +192,26 @@ export default function Scene3D({
             object={refs.current[selected]}
             mode={mode}
             showX={mode === 'translate'}
-            showY={mode === 'rotate'}
+            showY={mode === 'rotate' ? true : canRaise}
             showZ={mode === 'translate'}
             onMouseDown={() => {
+              pendingRef.current = null
               if (orbitRef.current) orbitRef.current.enabled = false
             }}
             onMouseUp={() => {
               if (orbitRef.current) orbitRef.current.enabled = true
               commitTransform()
+            }}
+            onObjectChange={() => {
+              const obj = refs.current[selected]
+              if (obj) {
+                pendingRef.current = {
+                  x: obj.position.x,
+                  y: obj.position.y,
+                  z: obj.position.z,
+                  rot: obj.rotation.y,
+                }
+              }
             }}
           />
         )}

@@ -38,6 +38,7 @@ const television: FurnitureComponentDef = {
   category: '家电',
   defaultSize: { w: 1.2, d: 0.08, h: 0.7 },
   defaultColor: '#2b2f36',
+  wallMountable: true, // 电视可上下升降
   Three,
   Plan2D,
 }

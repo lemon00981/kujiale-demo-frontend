@@ -37,6 +37,8 @@ function Plan2D() {
   const D = plan.room_bounds.d
   // 2D 俯视 SVG 的 y 轴向下，与 three.js 的 Z 轴方向相反，旋转取负以对齐 3D
   const rotDeg = (f: Furniture) => -((f.rot ?? 0) * 180) / Math.PI
+  // 按高度升序排序：地毯等矮的地面装饰先画，避免遮住上面的家具
+  const sortedFurniture = [...plan.furniture].sort((a, b) => (a.h ?? 0) - (b.h ?? 0))
 
   const handleMouseMove = (e: React.MouseEvent) => {
     if (drag) {
@@ -118,7 +120,7 @@ function Plan2D() {
             strokeDasharray="0.15 0.1"
           />
         ))}
-        {plan.furniture.map((f) => {
+        {sortedFurniture.map((f) => {
           const Plan = getFurniture(f.category).Plan2D
           const isSel = selected === f.id
           return (

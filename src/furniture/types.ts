@@ -27,6 +27,8 @@ export interface FurnitureComponentDef {
   defaultColor: string
   /** 默认离地高度（米），挂壁/吊装家具用，普通落地家具默认 0 */
   defaultY?: number
+  /** 是否可上下升降（3D 平移时显示 Y 轴手柄），挂壁电视等用，默认 false */
+  wallMountable?: boolean
   /** 3D 渲染（用几何体拼装） */
   Three: React.FC<FurnitureRenderProps>
   /** 2D 俯视图（SVG） */
