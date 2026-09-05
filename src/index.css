@@ -84,8 +84,8 @@ body {
 .btn {
   border: none;
   border-radius: 7px;
-  padding: 8px 14px;
-  font-size: 13px;
+  padding: 6px 12px;
+  font-size: 12px;
   cursor: pointer;
   background: #eef1f5;
   color: var(--text);
@@ -113,6 +113,16 @@ body {
 .btn.block {
   width: 100%;
   margin-top: 10px;
+}
+
+/* 按钮禁止选中文字（点击/长按不会出现蓝色选中） */
+.btn,
+.view-switch button,
+.scene3d-tools button,
+.edit-tools button,
+.layout-toolbar button {
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 /* 主体三栏 */
@@ -239,10 +249,10 @@ body {
 .view-switch button {
   border: none;
   background: transparent;
-  padding: 5px 12px;
+  padding: 6px 12px;
   border-radius: 6px;
   cursor: pointer;
-  font-size: 13px;
+  font-size: 12px;
   color: var(--muted);
 }
 
@@ -321,10 +331,8 @@ body {
 
 .plan-2d-wrap {
   height: 100%;
-  overflow: auto;
   display: grid;
   place-items: center;
-  padding: 20px;
 }
 
 .plan-2d {
@@ -352,7 +360,7 @@ body {
   flex: 1;
   border: none;
   background: transparent;
-  padding: 12px 4px;
+  padding: 8px 4px;
   cursor: pointer;
   font-size: 13px;
   color: var(--muted);
@@ -658,49 +666,83 @@ body {
   top: 12px;
   left: 12px;
   display: flex;
-  gap: 6px;
+  gap: 8px;
   z-index: 10;
+  pointer-events: none; /* 容器点击穿透 */
 }
 
 .scene3d-tools button {
-  border: 1px solid var(--border);
-  background: #fff;
-  border-radius: 6px;
-  padding: 5px 12px;
-  font-size: 12px;
+  pointer-events: auto;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  font-size: 13px;
+  line-height: 1;
   cursor: pointer;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  border-radius: 7px;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.35);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: #333;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  transition: background 0.15s, transform 0.1s;
+}
+
+.scene3d-tools button:active {
+  transform: scale(0.92);
 }
 
 .scene3d-tools button.active {
-  background: var(--primary);
+  background: rgba(47, 111, 237, 0.85);
   color: #fff;
-  border-color: var(--primary);
+  border-color: rgba(47, 111, 237, 0.6);
 }
 
 .scene3d-tools button.danger,
 .edit-tools button.danger {
-  color: #d0342c;
-  border-color: #f0c0bd;
+  color: #e5484d;
 }
 
 .edit-tools {
   display: flex;
-  gap: 6px;
+  gap: 8px;
 }
 
-.edit-tools button {
-  border: 1px solid var(--border);
-  background: #fff;
-  border-radius: 6px;
-  padding: 4px 10px;
-  font-size: 12px;
+/* 2D 画布内悬浮工具栏（左转/右转/删除）—— 透明容器 + 毛玻璃图标按钮 */
+.edit-tools.floating {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 10;
+  pointer-events: none; /* 容器点击穿透 */
+  background: transparent;
+}
+
+.edit-tools.floating button {
+  pointer-events: auto;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  font-size: 13px;
+  line-height: 1;
   cursor: pointer;
+  border-radius: 7px;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.35);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: #333;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  transition: background 0.15s, transform 0.1s;
 }
 
-.edit-tools button:hover {
-  border-color: var(--primary);
-  color: var(--primary);
+.edit-tools.floating button:active {
+  transform: scale(0.92);
 }
 
 .hint-tag {
@@ -736,6 +778,75 @@ body {
   font-family: 'SFMono-Regular', Consolas, 'Courier New', monospace;
 }
 
+/* ===== 移动端适配 ===== */
+@media (max-width: 768px) {
+  .topbar {
+    height: 48px;
+    padding: 0 12px;
+  }
+
+  .brand-sub {
+    display: none;
+  }
+
+  /* 三栏改为上下堆叠：左中右各占三分之一，平均分配 */
+  .app-body {
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .canvas-view {
+    flex: 1;
+    min-height: 0;
+    order: 1;
+  }
+
+  .canvas-toolbar {
+    height: 40px;
+    padding: 0 10px;
+  }
+
+  .left-panel {
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+    order: 2;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .right-panel {
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+    order: 3;
+    border-left: none;
+    border-top: 1px solid var(--border);
+  }
+
+  /* 触屏友好：保持足够点击区域 */
+  .btn {
+    padding: 8px 12px;
+  }
+
+  .view-switch button {
+    padding: 6px 12px;
+  }
+
+  .tabs button {
+    padding: 10px 4px;
+  }
+
+  .furniture-chip,
+  .chip-btn {
+    padding: 6px 14px;
+  }
+
+  .canvas-stage {
+    touch-action: none;
+  }
+}
+
 .furniture-chip.lib {
   cursor: grab;
   user-select: none;
@@ -754,46 +865,56 @@ body {
   height: 100%;
   display: flex;
   flex-direction: column;
+  position: relative;
 }
 
 .layout-toolbar {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 10;
   display: flex;
-  gap: 6px;
-  padding: 8px 12px;
-  background: var(--panel);
-  border-bottom: 1px solid var(--border);
+  gap: 8px;
+  pointer-events: none; /* 容器穿透 */
 }
 
 .layout-toolbar button {
-  border: 1px solid var(--border);
-  background: #fff;
-  border-radius: 6px;
-  padding: 5px 12px;
-  font-size: 12px;
+  pointer-events: auto;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  font-size: 13px;
+  line-height: 1;
   cursor: pointer;
+  border-radius: 7px;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.35);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: #333;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  transition: background 0.15s, transform 0.1s;
 }
 
-.layout-toolbar button:hover {
-  border-color: var(--primary);
-  color: var(--primary);
+.layout-toolbar button:active {
+  transform: scale(0.92);
 }
 
 .layout-toolbar button.active,
 .layout-toolbar button.primary {
-  background: var(--primary);
+  background: rgba(47, 111, 237, 0.85);
   color: #fff;
-  border-color: var(--primary);
+  border-color: rgba(47, 111, 237, 0.6);
 }
 
 .layout-toolbar button.danger {
-  color: #d0342c;
-  border-color: #f0c0bd;
+  color: #e5484d;
 }
 
 .layout-stage {
   flex: 1;
-  overflow: auto;
   display: grid;
   place-items: center;
-  padding: 20px;
 }

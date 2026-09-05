@@ -31,14 +31,28 @@ export default function LayoutEditor() {
   const W = plan.room_bounds.w
   const D = plan.room_bounds.d
   const walls = getWalls(plan)
+  // 自适应缩放：根据容器尺寸动态计算 scale
+  const [scale, setScale] = useState(SCALE)
+  useEffect(() => {
+    const container = svgRef.current?.parentElement
+    if (!container) return
+    const update = () => {
+      const r = container.getBoundingClientRect()
+      setScale(Math.max(15, Math.min(r.width / W, r.height / D) * 0.9))
+    }
+    update()
+    const ro = new ResizeObserver(update)
+    ro.observe(container)
+    return () => ro.disconnect()
+  }, [W, D])
 
   const toMeters = (clientX: number, clientY: number) => {
     const rect = svgRef.current!.getBoundingClientRect()
-    return { x: (clientX - rect.left) / SCALE, z: (clientY - rect.top) / SCALE }
+    return { x: (clientX - rect.left) / scale, z: (clientY - rect.top) / scale }
   }
 
   // 点击空白：画墙模式下落点；否则取消选中
-  const onSvgMouseDown = (e: React.MouseEvent) => {
+  const onSvgPointerDown = (e: React.PointerEvent) => {
     const { x, z } = toMeters(e.clientX, e.clientY)
     if (drawMode) {
       if (!drawStart) {
@@ -60,7 +74,7 @@ export default function LayoutEditor() {
     }
   }
 
-  const onSvgMouseMove = (e: React.MouseEvent) => {
+  const onSvgPointerMove = (e: React.PointerEvent) => {
     const { x, z } = toMeters(e.clientX, e.clientY)
     if (dragRoom) {
       const r = plan.rooms[dragRoom.i]
@@ -77,12 +91,12 @@ export default function LayoutEditor() {
     }
   }
 
-  const onMouseUp = () => {
+  const onPointerUp = () => {
     setDragRoom(null)
     setResizeRoom(null)
   }
 
-  const onRoomDown = (e: React.MouseEvent, i: number) => {
+  const onRoomPointerDown = (e: React.PointerEvent, i: number) => {
     if (drawMode) return
     e.stopPropagation()
     setSelectedRoom(i)
@@ -92,7 +106,7 @@ export default function LayoutEditor() {
     setDragRoom({ i, rx: r.x, rz: r.z, sx: x, sz: z })
   }
 
-  const onResizeDown = (e: React.MouseEvent, i: number) => {
+  const onResizePointerDown = (e: React.PointerEvent, i: number) => {
     if (drawMode) return
     e.stopPropagation()
     setSelectedRoom(i)
@@ -138,8 +152,9 @@ export default function LayoutEditor() {
   return (
     <div className="layout-editor">
       <div className="layout-toolbar">
-        <button onClick={addRoom}>+ 房间</button>
+        <button title="添加房间" onClick={addRoom}>⊞</button>
         <button
+          title="画墙"
           className={drawMode ? 'active' : ''}
           onClick={() => {
             setDrawMode(!drawMode)
@@ -148,31 +163,28 @@ export default function LayoutEditor() {
             setSelectedWall(null)
           }}
         >
-          画墙
+          ▦
         </button>
-        <button className="danger" onClick={onDelete}>
-          删除选中
-        </button>
+        <button title="删除选中" className="danger" onClick={onDelete}>✕</button>
         {selectedRoom != null && (
-          <button onClick={() => onRenameRoom(selectedRoom)}>改名</button>
+          <button title="改名" onClick={() => onRenameRoom(selectedRoom)}>✎</button>
         )}
-        <button className="primary" onClick={saveHouseType}>
-          保存户型
-        </button>
-        <button onClick={() => setEditingLayout(false)}>退出编辑</button>
+        <button title="保存户型" className="primary" onClick={saveHouseType}>✓</button>
+        {/* <button title="退出编辑" onClick={() => setEditingLayout(false)}>←</button> */}
       </div>
       <div className="layout-stage">
         <svg
           ref={svgRef}
-          width={W * SCALE}
-          height={D * SCALE}
+          width={W * scale}
+          height={D * scale}
           className="plan-2d"
-          onMouseMove={onSvgMouseMove}
-          onMouseUp={onMouseUp}
-          onMouseLeave={onMouseUp}
-          onMouseDown={onSvgMouseDown}
+          style={{ touchAction: 'none' }}
+          onPointerMove={onSvgPointerMove}
+          onPointerUp={onPointerUp}
+          onPointerCancel={onPointerUp}
+          onPointerDown={onSvgPointerDown}
         >
-          <g transform={`scale(${SCALE})`}>
+          <g transform={`scale(${scale})`}>
             <rect x={0} y={0} width={W} height={D} fill={plan.palette.floor} />
 
             {/* 墙：实线（可点选删除） */}
@@ -210,7 +222,7 @@ export default function LayoutEditor() {
                     strokeWidth={0.04}
                     strokeDasharray="0.15 0.1"
                     style={{ cursor: 'move' }}
-                    onMouseDown={(e) => onRoomDown(e, i)}
+                    onPointerDown={(e) => onRoomPointerDown(e, i)}
                   />
                   <text
                     x={r.x + 0.12}
@@ -218,7 +230,7 @@ export default function LayoutEditor() {
                     fontSize={0.3}
                     fill="#6b6356"
                     style={{ cursor: 'text' }}
-                    onMouseDown={(e) => e.stopPropagation()}
+                    onPointerDown={(e) => e.stopPropagation()}
                     onDoubleClick={() => onRenameRoom(i)}
                   >
                     {r.name}
@@ -232,7 +244,7 @@ export default function LayoutEditor() {
                     stroke="#2f6fed"
                     strokeWidth={0.03}
                     style={{ cursor: 'nwse-resize' }}
-                    onMouseDown={(e) => onResizeDown(e, i)}
+                    onPointerDown={(e) => onResizePointerDown(e, i)}
                   />
                 </g>
               )

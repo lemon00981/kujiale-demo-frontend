@@ -211,17 +211,22 @@ export default function Scene3D({
 
       <div className="scene3d-tools">
         <button
+          title="平移"
           className={mode === 'translate' ? 'active' : ''}
           onClick={() => setMode('translate')}
         >
-          平移
+          ✥
         </button>
-        <button className={mode === 'rotate' ? 'active' : ''} onClick={() => setMode('rotate')}>
-          旋转
+        <button
+          title="旋转"
+          className={mode === 'rotate' ? 'active' : ''}
+          onClick={() => setMode('rotate')}
+        >
+          ⟳
         </button>
         {selected && (
-          <button className="danger" onClick={() => removeFurniture(selected)}>
-            删除选中
+          <button title="删除" className="danger" onClick={() => removeFurniture(selected)}>
+            ✕
           </button>
         )}
       </div>

@@ -36,15 +36,29 @@ function Plan2D() {
 
   const W = plan.room_bounds.w
   const D = plan.room_bounds.d
+  // 自适应缩放：根据容器尺寸动态计算 scale，让 2D 俯视图适配容器（不滚动）
+  const [scale, setScale] = useState(SCALE)
+  useEffect(() => {
+    const container = svgRef.current?.parentElement
+    if (!container) return
+    const update = () => {
+      const r = container.getBoundingClientRect()
+      setScale(Math.max(15, Math.min(r.width / W, r.height / D) * 0.9))
+    }
+    update()
+    const ro = new ResizeObserver(update)
+    ro.observe(container)
+    return () => ro.disconnect()
+  }, [W, D])
   // 2D 俯视 SVG 的 y 轴向下，与 three.js 的 Z 轴方向相反，旋转取负以对齐 3D
   const rotDeg = (f: Furniture) => -((f.rot ?? 0) * 180) / Math.PI
   // 按高度升序排序：地毯等矮的地面装饰先画，避免遮住上面的家具
   const sortedFurniture = [...plan.furniture].sort((a, b) => (a.h ?? 0) - (b.h ?? 0))
 
-  const handleMouseMove = (e: React.MouseEvent) => {
+  const handlePointerMove = (e: React.PointerEvent) => {
     if (drag) {
-      const dx = (e.clientX - drag.startMouseX) / SCALE
-      const dz = (e.clientY - drag.startMouseY) / SCALE
+      const dx = (e.clientX - drag.startMouseX) / scale
+      const dz = (e.clientY - drag.startMouseY) / scale
       updateFurniture(drag.id, { x: drag.startX + dx, z: drag.startZ + dz })
     } else if (rotating) {
       const svg = svgRef.current
@@ -61,19 +75,19 @@ function Plan2D() {
     }
   }
 
-  const handleMouseUp = () => {
+  const handlePointerUp = () => {
     setDrag(null)
     setRotating(null)
   }
 
-  const startRotate = (e: React.MouseEvent, f: Furniture) => {
+  const startRotate = (e: React.PointerEvent, f: Furniture) => {
     e.stopPropagation()
     onSelect(f.id)
     const svg = svgRef.current
     if (!svg) return
     const rect = svg.getBoundingClientRect()
-    const cx = f.x * SCALE
-    const cz = f.z * SCALE
+    const cx = f.x * scale
+    const cz = f.z * scale
     const angle = Math.atan2(e.clientY - rect.top - cz, e.clientX - rect.left - cx)
     setRotating({ id: f.id, cx, cz, startAngle: angle, startRot: f.rot ?? 0 })
   }
@@ -89,24 +103,25 @@ function Plan2D() {
     const type = readFurnitureType(e.dataTransfer)
     if (!type) return
     const rect = e.currentTarget.getBoundingClientRect()
-    const x = (e.clientX - rect.left) / SCALE
-    const z = (e.clientY - rect.top) / SCALE
+    const x = (e.clientX - rect.left) / scale
+    const z = (e.clientY - rect.top) / scale
     addFurniture(type, x, z)
   }
 
   return (
     <svg
       ref={svgRef}
-      width={W * SCALE}
-      height={D * SCALE}
+      width={W * scale}
+      height={D * scale}
       className="plan-2d"
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
-      onMouseLeave={handleMouseUp}
+      style={{ touchAction: 'none' }}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerUp}
       onDragOver={handleDragOver}
       onDrop={handleDrop}
     >
-      <g transform={`scale(${SCALE})`}>
+      <g transform={`scale(${scale})`}>
         <rect x={0} y={0} width={W} height={D} fill={plan.palette.floor} />
         {plan.rooms.map((r, i) => (
           <rect
@@ -130,7 +145,7 @@ function Plan2D() {
               key={f.id}
               transform={`translate(${f.x} ${f.z}) rotate(${rotDeg(f)})`}
               style={{ cursor: 'move' }}
-              onMouseDown={(e) => {
+              onPointerDown={(e) => {
                 e.stopPropagation()
                 onSelect(f.id)
                 setDrag({
@@ -162,7 +177,7 @@ function Plan2D() {
                     stroke="#fff"
                     strokeWidth={0.04}
                     style={{ cursor: 'grab' }}
-                    onMouseDown={(e) => startRotate(e, f)}
+                    onPointerDown={(e) => startRotate(e, f)}
                   />
                 </>
               )}
@@ -229,10 +244,10 @@ export default function CanvasView() {
       <div className="canvas-toolbar">
         <div className="view-switch">
           <button className={view === '2d' ? 'active' : ''} onClick={() => setView('2d')}>
-            2D 俯视
+            2D
           </button>
           <button className={view === '3d' ? 'active' : ''} onClick={() => setView('3d')}>
-            3D 视图
+            3D
           </button>
         </div>
 
@@ -241,18 +256,8 @@ export default function CanvasView() {
             className={editingLayout ? 'btn primary' : 'btn'}
             onClick={() => setEditingLayout(!editingLayout)}
           >
-            {editingLayout ? '退出编辑户型' : '编辑户型'}
+            {editingLayout ? '退出编辑' : '编辑户型'}
           </button>
-        )}
-
-        {plan && view === '2d' && selected && (
-          <div className="edit-tools">
-            <button onClick={() => rotateSelected(-45)}>↺ 左转45°</button>
-            <button onClick={() => rotateSelected(45)}>↻ 右转45°</button>
-            <button className="danger" onClick={() => removeFurniture(selected)}>
-              删除
-            </button>
-          </div>
         )}
 
         {plan && (
@@ -260,7 +265,7 @@ export default function CanvasView() {
             <span className="style-tag">{plan.style}</span>
             <span>{plan.area}㎡</span>
             <span>{plan.furniture.length} 件家具</span>
-            {selected && <span className="hint-tag">已选中，可拖拽/旋转/删除</span>}
+            {/* {selected && <span className="hint-tag">已选中，可拖拽/旋转/删除</span>} */}
           </div>
         )}
       </div>
@@ -271,6 +276,13 @@ export default function CanvasView() {
         onDragLeave={handleStageDragLeave}
         onDrop={handleStageDrop}
       >
+        {plan && view === '2d' && !editingLayout && selected && (
+          <div className="edit-tools floating">
+            <button title="左转 45°" onClick={() => rotateSelected(-45)}>↺</button>
+            <button title="右转 45°" onClick={() => rotateSelected(45)}>↻</button>
+            <button title="删除" className="danger" onClick={() => removeFurniture(selected)}>✕</button>
+          </div>
+        )}
         {generating && (
           <div className="canvas-loading">
             <div className="spinner" />
