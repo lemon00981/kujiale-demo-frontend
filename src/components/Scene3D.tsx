@@ -124,12 +124,14 @@ export default function Scene3D({
   }
 
   // 拖动结束才提交，拖动过程中由 TransformControls 直接改 object，避免高频 setState 导致的卡顿
+  // 拖动结束提交数据
   const commitTransform = () => {
     if (!selected) return
     const obj = refs.current[selected]
     if (!obj) return
+    // 只改前端，不改数据库
     updateFurniture(selected, {
-      x: obj.position.x + W / 2,
+      x: obj.position.x + W / 2,  // 中心坐标 → 左上角坐标（+W/2 映射回去）
       y: obj.position.y,
       z: obj.position.z + D / 2,
       rot: obj.rotation.y,
@@ -159,24 +161,28 @@ export default function Scene3D({
               ref={(el) => {
                 refs.current[f.id] = el
               }}
-              position={[f.x - W / 2, f.y ?? 0, f.z - D / 2]}
+              position={[f.x - W / 2, f.y ?? 0, f.z - D / 2]} // 坐标映射
               rotation={[0, f.rot ?? 0, 0]}
               onClick={(e) => {
                 e.stopPropagation()
                 onSelect(f.id)
               }}
             >
+              {/* 调组件系统的 3D 渲染 */}
               <Three f={f} />
+              {/* 选中的橙色线框 */}
               {selected === f.id && <SelectionBox f={f} />}
             </group>
           )
         })}
 
+        {/* 3D 平移/旋转 */}  
         {selected && refs.current[selected] && (
           <TransformControls
             object={refs.current[selected]}
             mode={mode}
             showX={mode === 'translate'}
+            showY={mode === 'rotate'}
             showZ={mode === 'translate'}
             onMouseDown={() => {
               if (orbitRef.current) orbitRef.current.enabled = false
@@ -188,6 +194,7 @@ export default function Scene3D({
           />
         )}
 
+        {/* 视角控制：旋转、缩放整个场景（拖家具时 onMouseDown 临时禁用它，避免打架） */}
         <OrbitControls
           ref={orbitRef}
           makeDefault

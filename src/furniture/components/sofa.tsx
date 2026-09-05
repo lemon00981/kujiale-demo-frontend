@@ -48,7 +48,7 @@ function Plan2D({ f }: FurnitureRenderProps) {
         width={w}
         height={d * 0.2}
         rx={0.06}
-        style={{ fill: darken(f.color, 0.85), stroke: 'rgba(0,0,0,0.2)', strokeWidth: 1 }}
+        style={{ fill: darken(f.color, 0.85) }}
       />
       <rect
         x={-w / 2 + 0.05}

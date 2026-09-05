@@ -38,6 +38,7 @@ const televisionWall: FurnitureComponentDef = {
   category: '家电',
   defaultSize: { w: 1.2, d: 0.08, h: 0.7 },
   defaultColor: '#2b2f36',
+  defaultY: 1.2, // 挂壁：屏幕中心离地 1.2m
   Three,
   Plan2D,
 }

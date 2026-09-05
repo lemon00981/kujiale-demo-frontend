@@ -20,7 +20,7 @@ function Plan2D({ f }: FurnitureRenderProps) {
   return (
     <g>
       <rect x={-w / 2} y={-d * 0.35} width={w} height={d * 0.7} rx={0.06} style={planFill(OFFWHITE)} />
-      <rect x={-w * 0.42} y={-d / 2} width={w * 0.85} height={0.22} rx={0.04} style={{ fill: OFFWHITE, stroke: 'rgba(0,0,0,0.25)', strokeWidth: 1 }} />
+      <rect x={-w * 0.42} y={-d / 2} width={w * 0.85} height={0.22} rx={0.04} style={{ fill: OFFWHITE }} />
     </g>
   )
 }

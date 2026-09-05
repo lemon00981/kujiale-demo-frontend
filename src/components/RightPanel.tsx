@@ -6,9 +6,9 @@ type Tab = 'generate' | 'chat' | 'floorplan' | 'advice'
 
 const TABS: [Tab, string][] = [
   ['generate', '文生设计'],
-  ['chat', 'AI 对话'],
-  ['floorplan', '户型识别'],
-  ['advice', '灯光材质'],
+  // ['chat', 'AI 对话'],
+  // ['floorplan', '户型识别'],
+  // ['advice', '灯光材质'],
 ]
 
 export default function RightPanel() {

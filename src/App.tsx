@@ -8,11 +8,13 @@ import { useAppStore } from './store/useAppStore'
 export default function App() {
   const loadHouseTypes = useAppStore((s) => s.loadHouseTypes)
   const loadDesigns = useAppStore((s) => s.loadDesigns)
+  const loadChatHistory = useAppStore((s) => s.loadChatHistory)
 
   useEffect(() => {
     loadHouseTypes()
     loadDesigns()
-  }, [loadHouseTypes, loadDesigns])
+    loadChatHistory()
+  }, [loadHouseTypes, loadDesigns, loadChatHistory])
 
   return (
     <div className="app">

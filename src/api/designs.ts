@@ -1,4 +1,4 @@
-import type { Design, HouseType } from '../types'
+import type { Design, DesignMessage, HouseType } from '../types'
 import { http } from './client'
 
 interface ApiEnvelope<T> {
@@ -17,6 +17,7 @@ export async function listDesigns(): Promise<Design[]> {
   return data.data
 }
 
+// 新增方案
 export async function saveDesign(payload: {
   userId?: number
   houseTypeId?: number | null
@@ -38,6 +39,7 @@ export async function deleteDesign(id: number): Promise<void> {
   await http.delete(`/designs/${id}`)
 }
 
+// 更新方案
 export async function updateDesign(
   id: number,
   payload: Partial<Pick<Design, 'title' | 'style' | 'prompt' | 'planJson' | 'thumbnail'>>,
@@ -56,4 +58,19 @@ export async function updateHouseType(
 
 export async function deleteHouseType(id: number): Promise<void> {
   await http.delete(`/house-types/${id}`)
+}
+
+export async function listDesignMessages(sessionId: string): Promise<DesignMessage[]> {
+  const { data } = await http.get<ApiEnvelope<DesignMessage[]>>('/design-messages', {
+    params: { sessionId },
+  })
+  return data.data
+}
+
+export async function saveDesignMessage(
+  sessionId: string,
+  role: 'user' | 'assistant',
+  content: string,
+): Promise<void> {
+  await http.post('/design-messages', { sessionId, role, content })
 }

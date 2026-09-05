@@ -122,6 +122,7 @@ function Plan2D() {
           const Plan = getFurniture(f.category).Plan2D
           const isSel = selected === f.id
           return (
+            // 外层 <g> 负责[放在哪]，内层 <Plan> 负责[长什么样]
             <g
               key={f.id}
               transform={`translate(${f.x} ${f.z}) rotate(${rotDeg(f)})`}

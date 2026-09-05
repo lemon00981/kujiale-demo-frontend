@@ -16,12 +16,13 @@ export interface Furniture {
 }
 
 export interface Room {
-  name: string
-  x: number
-  z: number
-  w: number
-  d: number
+  name: string   // 房间名，如“客厅”
+  x: number      // 左上角 x 坐标（米）
+  z: number      // 左上角 z 坐标（米）
+  w: number      // 宽度（米）
+  d: number      // 深度（米）
 }
+
 
 export interface Palette {
   wall: string
@@ -93,6 +94,14 @@ export interface Design {
   planJson: string
   thumbnail: string
   status: string
+  createdAt: string
+}
+
+export interface DesignMessage {
+  id: number
+  sessionId: string
+  role: string
+  content: string
   createdAt: string
 }
 

@@ -25,6 +25,8 @@ export interface FurnitureComponentDef {
   defaultSize: { w: number; d: number; h: number }
   /** 默认颜色 */
   defaultColor: string
+  /** 默认离地高度（米），挂壁/吊装家具用，普通落地家具默认 0 */
+  defaultY?: number
   /** 3D 渲染（用几何体拼装） */
   Three: React.FC<FurnitureRenderProps>
   /** 2D 俯视图（SVG） */

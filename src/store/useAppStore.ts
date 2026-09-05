@@ -15,20 +15,47 @@ import type {
   ViewMode,
 } from '../types'
 
+/** 会话 ID：持久化到 localStorage，刷新后能恢复同一段对话历史 */
+function getSessionId(): string {
+  let id = localStorage.getItem('kujiale_session_id')
+  if (!id) {
+    id = `s${Date.now()}${Math.floor(Math.random() * 1000)}`
+    localStorage.setItem('kujiale_session_id', id)
+  }
+  return id
+}
+
 /** 空白画布的默认方案（未命名、无房间、无家具） */
 function blankPlan(): DesignPlan {
   return {
-    title: '未命名方案',
-    style: '现代简约',
-    area: 48,
-    description: '自由设计',
-    room_bounds: { w: 8, d: 6 },
-    rooms: [],
-    furniture: [],
-    palette: { wall: '#f5f0e8', floor: '#d9c7a7', accent: '#b89b6a', text: '#2f2a26' },
-    materials: [],
-    lighting: [],
-    summary: '空白画布，从左侧拖拽家具开始自由设计。',
+    title: '未命名方案',              // 标题
+    style: '现代简约',                // 风格
+    area: 48,                        // 面积㎡（8×6=48）
+    description: '自由设计',          // 描述/AI prompt
+    room_bounds: { w: 8, d: 6 },  // 整个画布尺寸：宽8米、深6米（这是“房子”外框）
+    // rooms: [],                    // 房间列表——空数组 = 没有任何房间分区
+    rooms: [
+      // 每个房间只画 右边一面 和 下边一面 墙
+      // {name: '客厅', x: 0, z: 0, w: 4, d: 3},
+      // {name: '厨房', x: 4, z: 0, w: 2, d: 3},
+      // {name: '卫生间', x: 6, z: 0, w: 2, d: 3},
+      // {name: '主卧', x: 0, z: 3, w: 2.7, d: 3},
+      // {name: '次卧', x: 2.7, z: 3, w: 2.7, d: 3},
+      // {name: '书房', x: 5.4, z: 3, w: 2.6, d: 3},
+
+
+      // {name: '客厅', x: 0, z: 0, w: 4, d: 3},
+      {name: '厨房', x: 4, z: 0, w: 2, d: 3},
+      // {name: '卫生间', x: 6, z: 0, w: 2, d: 3},
+      {name: '主卧', x: 0, z: 3, w: 2.7, d: 3},
+      // {name: '次卧', x: 2.7, z: 3, w: 2.7, d: 3},
+      // {name: '书房', x: 5.4, z: 3, w: 2.6, d: 3},
+    ],
+    furniture: [],                // 家具列表——空 = 没家具
+    palette: { wall: '#f5f0e8', floor: '#d9c7a7', accent: '#b89b6a', text: '#2f2a26' }, // 配色：墙/地板/点缀/文字色
+    materials: [],   // 材质建议
+    lighting: [],    // 灯光建议
+    summary: '空白画布，从左侧拖拽家具开始自由设计。',  // 方案总结文字
   }
 }
 
@@ -48,6 +75,7 @@ interface AppState {
   advice: Advice | null
   chat: ChatMsg[]
   chatBusy: boolean
+  sessionId: string
   generating: boolean
   view: ViewMode
   selectedFurniture: string | null
@@ -68,6 +96,7 @@ interface AppState {
 
   generateDesign: (description: string, area: number, style?: string) => Promise<void>
   sendChat: (text: string) => Promise<void>
+  loadChatHistory: () => Promise<void>
   recognizeFloorPlan: (file: File) => Promise<void>
   getAdvice: (room: string) => Promise<void>
   saveDesign: () => Promise<void>
@@ -85,6 +114,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   advice: null,
   chat: [],
   chatBusy: false,
+  sessionId: getSessionId(),
   generating: false,
   view: '3d',
   selectedFurniture: null,
@@ -139,7 +169,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       d: def.defaultSize.d,
       h: def.defaultSize.h,
       color: def.defaultColor,
-      y: 0,
+      y: def.defaultY ?? 0,
       rot: 0,
     }
     // 限制在画布范围内
@@ -157,6 +187,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   applyHouseType: (ht) => {
+    console.log("========= 应用房屋类型 =========")
     let rawRooms: unknown[] = []
     try {
       const layout = JSON.parse(ht.layoutJson)
@@ -217,8 +248,11 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   sendChat: async (text) => {
     const history = get().chat
+    const sessionId = get().sessionId
     const messages: ChatMsg[] = [...history, { role: 'user', content: text }]
     set({ chat: [...messages, { role: 'assistant', content: '' }], chatBusy: true })
+    // 用户消息落库（后端未启动时静默失败，不影响对话）
+    designApi.saveDesignMessage(sessionId, 'user', text).catch(() => {})
     try {
       await streamChat(messages, (delta) => {
         const chat = get().chat
@@ -228,10 +262,29 @@ export const useAppStore = create<AppState>((set, get) => ({
           set({ chat: updated })
         }
       })
+      // AI 回复落库
+      const chat = get().chat
+      const last = chat[chat.length - 1]
+      if (last && last.role === 'assistant' && last.content) {
+        designApi.saveDesignMessage(sessionId, 'assistant', last.content).catch(() => {})
+      }
     } catch (e) {
       get().showToast('对话失败，请确认 AI 服务已启动')
     } finally {
       set({ chatBusy: false })
+    }
+  },
+
+  loadChatHistory: async () => {
+    try {
+      const history = await designApi.listDesignMessages(get().sessionId)
+      if (history.length > 0) {
+        set({
+          chat: history.map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content })),
+        })
+      }
+    } catch {
+      // 后端未启动时静默
     }
   },
 
