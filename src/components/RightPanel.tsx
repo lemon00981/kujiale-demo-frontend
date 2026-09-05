@@ -36,6 +36,7 @@ export default function RightPanel() {
 function GenerateTab() {
   const generating = useAppStore((s) => s.generating)
   const generateDesign = useAppStore((s) => s.generateDesign)
+  const agentSteps = useAppStore((s) => s.agentSteps)
   const plan = useAppStore((s) => s.plan)
   const [desc, setDesc] = useState('帮我设计一个 90㎡ 现代简约风的三室两厅')
   const [area, setArea] = useState(90)
@@ -73,6 +74,15 @@ function GenerateTab() {
       <button className="btn primary block" disabled={generating || !desc.trim()} onClick={submit}>
         {generating ? '生成中…' : '生成方案'}
       </button>
+      {agentSteps.length > 0 && (
+        <div className="agent-steps">
+          {agentSteps.map((s, i) => (
+            <div key={i} className="agent-step">
+              {s}
+            </div>
+          ))}
+        </div>
+      )}
       {plan && <PlanCard plan={plan} />}
     </div>
   )

@@ -25,6 +25,7 @@ export async function streamChat(
     const { done, value } = await reader.read()
     if (done) break
     buffer += decoder.decode(value, { stream: true })
+    buffer = buffer.replace(/\r\n/g, '\n') // 兼容 sse-starlette 的 \r\n\r\n 分隔符
 
     const events = buffer.split('\n\n')
     buffer = events.pop() ?? ''

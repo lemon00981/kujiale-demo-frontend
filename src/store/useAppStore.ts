@@ -17,6 +17,17 @@ import type {
   Wall,
 } from '../types'
 
+/** agent 工具名 → 中文标签（流式生成时展示用） */
+const TOOL_LABELS: Record<string, string> = {
+  list_styles: '查询风格',
+  get_style_palette: '获取配色',
+  list_furniture_catalog: '查询家具目录',
+  get_room_blueprint: '获取房间布局模板',
+  get_design_rules: '查询设计规范',
+  retrieve_knowledge: '检索知识库(RAG)',
+  validate_layout: '校验布局',
+}
+
 /** 会话 ID：持久化到 localStorage，刷新后能恢复同一段对话历史 */
 function getSessionId(): string {
   let id = localStorage.getItem('kujiale_session_id')
@@ -79,6 +90,7 @@ interface AppState {
   chatBusy: boolean
   sessionId: string
   generating: boolean
+  agentSteps: string[]
   view: ViewMode
   selectedFurniture: string | null
   houseTypes: HouseType[]
@@ -127,6 +139,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   chatBusy: false,
   sessionId: getSessionId(),
   generating: false,
+  agentSteps: [],
   view: '3d',
   selectedFurniture: null,
   houseTypes: [],
@@ -338,11 +351,24 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   generateDesign: async (description, area, style) => {
-    console.log("生成方案-接口调用")
-    set({ generating: true })
+    console.log("========== 生成方案-流式 ========")
+    set({ generating: true, agentSteps: [] })
     try {
-      const plan = await aiApi.generateDesign(description, area, style)
-      set({ plan, selectedFurniture: null, editingDesignId: null })
+      await aiApi.streamGenerateDesign({ description, area, style }, (event) => {
+        const steps = get().agentSteps
+        if (event.type === 'step') {
+          set({ agentSteps: [...steps, `第 ${event.step} 步：思考 / 调用工具`] })
+        } else if (event.type === 'tool_call') {
+          set({ agentSteps: [...steps, `调用工具：${TOOL_LABELS[event.name] ?? event.name}`] })
+        } else if (event.type === 'tool_result') {
+          set({ agentSteps: [...steps, `　↳ ${TOOL_LABELS[event.name] ?? event.name} 完成`] })
+        } else if (event.type === 'done') {
+          console.log("生成方案完成")
+          set({ plan: event.plan, selectedFurniture: null, editingDesignId: null })
+        } else if (event.type === 'error') {
+          get().showToast('生成失败：' + event.message)
+        }
+      })
     } catch (e) {
       get().showToast('生成失败，请确认 AI 服务已启动')
     } finally {
