@@ -23,6 +23,14 @@ export interface Room {
   d: number      // 深度（米）
 }
 
+/** 一段墙：起点 (x1,z1) → 终点 (x2,z2)，绝对坐标（米），水平或垂直 */
+export interface Wall {
+  x1: number
+  z1: number
+  x2: number
+  z2: number
+}
+
 
 export interface Palette {
   wall: string
@@ -51,6 +59,8 @@ export interface DesignPlan {
   description: string
   room_bounds: { w: number; d: number }
   rooms: Room[]
+  /** 独立墙段；undefined 表示「未提供、请按房间边界自动推断」，[] 表示「显式无墙（开放式）」 */
+  walls?: Wall[]
   furniture: Furniture[]
   palette: Palette
   materials: Material[]

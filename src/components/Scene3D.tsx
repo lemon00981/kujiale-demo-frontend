@@ -7,6 +7,7 @@ import type { Group } from 'three'
 import type { DesignPlan, Furniture } from '../types'
 import { getFurniture } from '../furniture'
 import { useAppStore } from '../store/useAppStore'
+import { getWalls } from '../layout'
 import { readFurnitureType } from '../dnd'
 
 type TransformMode = 'translate' | 'rotate'
@@ -16,45 +17,27 @@ function RoomShell({ plan }: { plan: DesignPlan }) {
   const D = plan.room_bounds.d
   const wallH = 2.8
   const t = 0.12
+  // 显式墙（编辑户型）或按房间边界推断墙（AI 生成/旧数据）
+  const walls = getWalls(plan)
   return (
     <group>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
         <planeGeometry args={[W, D]} />
         <meshStandardMaterial color={plan.palette.floor} />
       </mesh>
-      <mesh position={[0, wallH / 2, -D / 2]}>
-        <boxGeometry args={[W, wallH, t]} />
-        <meshStandardMaterial color={plan.palette.wall} transparent opacity={0.22} />
-      </mesh>
-      <mesh position={[0, wallH / 2, D / 2]}>
-        <boxGeometry args={[W, wallH, t]} />
-        <meshStandardMaterial color={plan.palette.wall} transparent opacity={0.22} />
-      </mesh>
-      <mesh position={[-W / 2, wallH / 2, 0]}>
-        <boxGeometry args={[t, wallH, D]} />
-        <meshStandardMaterial color={plan.palette.wall} transparent opacity={0.22} />
-      </mesh>
-      <mesh position={[W / 2, wallH / 2, 0]}>
-        <boxGeometry args={[t, wallH, D]} />
-        <meshStandardMaterial color={plan.palette.wall} transparent opacity={0.22} />
-      </mesh>
-      {/* 内部房间隔墙：只画不贴外墙的右/下边，避免相邻房间重复画 */}
-      {plan.rooms.map((r, i) => (
-        <group key={i}>
-          {r.x + r.w < W - 0.01 && (
-            <mesh position={[r.x + r.w - W / 2, wallH / 2, r.z + r.d / 2 - D / 2]}>
-              <boxGeometry args={[t, wallH, r.d]} />
-              <meshStandardMaterial color={plan.palette.wall} transparent opacity={0.22} />
-            </mesh>
-          )}
-          {r.z + r.d < D - 0.01 && (
-            <mesh position={[r.x + r.w / 2 - W / 2, wallH / 2, r.z + r.d - D / 2]}>
-              <boxGeometry args={[r.w, wallH, t]} />
-              <meshStandardMaterial color={plan.palette.wall} transparent opacity={0.22} />
-            </mesh>
-          )}
-        </group>
-      ))}
+      {/* 每段墙：水平/垂直线段 → 立起来的薄墙（画布坐标转场景中心坐标） */}
+      {walls.map((w, i) => {
+        const horizontal = Math.abs(w.z1 - w.z2) < 0.01
+        const length = horizontal ? Math.abs(w.x2 - w.x1) : Math.abs(w.z2 - w.z1)
+        const cx = horizontal ? (w.x1 + w.x2) / 2 : w.x1
+        const cz = horizontal ? w.z1 : (w.z1 + w.z2) / 2
+        return (
+          <mesh key={i} position={[cx - W / 2, wallH / 2, cz - D / 2]}>
+            <boxGeometry args={horizontal ? [length, wallH, t] : [t, wallH, length]} />
+            <meshStandardMaterial color={plan.palette.wall} transparent opacity={0.22} />
+          </mesh>
+        )
+      })}
     </group>
   )
 }

@@ -3,6 +3,7 @@ import { useAppStore } from '../store/useAppStore'
 import { getFurniture } from '../furniture'
 import type { Furniture } from '../types'
 import Scene3D from './Scene3D'
+import LayoutEditor from './LayoutEditor'
 import { readFurnitureType } from '../dnd'
 
 const SCALE = 60 // 1 米 = 60 像素
@@ -184,6 +185,9 @@ export default function CanvasView() {
   const addFurniture = useAppStore((s) => s.addFurniture)
   const newCanvas = useAppStore((s) => s.newCanvas)
   const generating = useAppStore((s) => s.generating)
+  const editingLayout = useAppStore((s) => s.editingLayout)
+  const editingHouseTypeId = useAppStore((s) => s.editingHouseTypeId)
+  const setEditingLayout = useAppStore((s) => s.setEditingLayout)
   const [dragOver, setDragOver] = useState(false)
 
   const handleStageDragOver = (e: React.DragEvent) => {
@@ -232,6 +236,15 @@ export default function CanvasView() {
           </button>
         </div>
 
+        {editingHouseTypeId != null && (
+          <button
+            className={editingLayout ? 'btn primary' : 'btn'}
+            onClick={() => setEditingLayout(!editingLayout)}
+          >
+            {editingLayout ? '退出编辑户型' : '编辑户型'}
+          </button>
+        )}
+
         {plan && view === '2d' && selected && (
           <div className="edit-tools">
             <button onClick={() => rotateSelected(-45)}>↺ 左转45°</button>
@@ -276,7 +289,8 @@ export default function CanvasView() {
           </div>
         )}
         {plan && view === '3d' && <Scene3D plan={plan} selected={selected} onSelect={onSelect} />}
-        {plan && view === '2d' && (
+        {plan && view === '2d' && editingLayout && <LayoutEditor />}
+        {plan && view === '2d' && !editingLayout && (
           <div className="plan-2d-wrap">
             <Plan2D />
           </div>

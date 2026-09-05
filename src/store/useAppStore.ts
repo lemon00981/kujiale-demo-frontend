@@ -3,6 +3,7 @@ import * as aiApi from '../api/ai'
 import * as designApi from '../api/designs'
 import { streamChat } from '../api/stream'
 import { getFurniture } from '../furniture'
+import { getWalls } from '../layout'
 import type {
   Advice,
   ChatMsg,
@@ -13,6 +14,7 @@ import type {
   HouseType,
   Room,
   ViewMode,
+  Wall,
 } from '../types'
 
 /** 会话 ID：持久化到 localStorage，刷新后能恢复同一段对话历史 */
@@ -82,6 +84,8 @@ interface AppState {
   houseTypes: HouseType[]
   designs: Design[]
   editingDesignId: number | null
+  editingHouseTypeId: number | null
+  editingLayout: boolean
   toast: string | null
 
   setView: (v: ViewMode) => void
@@ -92,6 +96,13 @@ interface AppState {
   addFurniture: (type: string, x?: number, z?: number) => void
   newCanvas: () => void
   applyHouseType: (ht: HouseType) => void
+  setEditingLayout: (v: boolean) => void
+  updateRoom: (i: number, patch: Partial<Room>) => void
+  addRoom: () => void
+  removeRoom: (i: number) => void
+  addWall: (wall: Wall) => void
+  removeWall: (i: number) => void
+  saveHouseType: () => Promise<void>
   showToast: (msg: string) => void
 
   generateDesign: (description: string, area: number, style?: string) => Promise<void>
@@ -121,6 +132,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   houseTypes: [],
   designs: [],
   editingDesignId: null,
+  editingHouseTypeId: null,
+  editingLayout: false,
   toast: null,
 
   setView: (v) => set({ view: v }),
@@ -182,16 +195,99 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   newCanvas: () => {
-    set({ plan: blankPlan(), selectedFurniture: null, editingDesignId: null })
+    set({
+      plan: blankPlan(),
+      selectedFurniture: null,
+      editingDesignId: null,
+      editingHouseTypeId: null,
+      editingLayout: false,
+    })
     get().showToast('已新建空白画布，拖拽左侧家具开始设计')
+  },
+
+  setEditingLayout: (v) => set({ editingLayout: v, view: '2d' }),
+
+  updateRoom: (i, patch) => {
+    const plan = get().plan
+    if (!plan) return
+    set({
+      plan: {
+        ...plan,
+        rooms: plan.rooms.map((r, idx) => (idx === i ? { ...r, ...patch } : r)),
+      },
+    })
+  },
+
+  addRoom: () => {
+    const plan = get().plan
+    if (!plan) return
+    const W = plan.room_bounds.w
+    const D = plan.room_bounds.d
+    const n = plan.rooms.length + 1
+    const newRoom: Room = {
+      name: `房间${n}`,
+      x: Math.max(0, W / 2 - 1),
+      z: Math.max(0, D / 2 - 1),
+      w: 2,
+      d: 2,
+    }
+    set({ plan: { ...plan, rooms: [...plan.rooms, newRoom] } })
+  },
+
+  removeRoom: (i) => {
+    const plan = get().plan
+    if (!plan) return
+    set({ plan: { ...plan, rooms: plan.rooms.filter((_, idx) => idx !== i) } })
+  },
+
+  addWall: (wall) => {
+    const plan = get().plan
+    if (!plan) return
+    const walls = plan.walls ?? getWalls(plan)
+    set({ plan: { ...plan, walls: [...walls, wall] } })
+  },
+
+  removeWall: (i) => {
+    const plan = get().plan
+    if (!plan) return
+    const walls = plan.walls ?? getWalls(plan)
+    set({ plan: { ...plan, walls: walls.filter((_, idx) => idx !== i) } })
+  },
+
+  saveHouseType: async () => {
+    const plan = get().plan
+    const id = get().editingHouseTypeId
+    if (!plan || id == null) {
+      get().showToast('请先从户型库载入一个户型再编辑')
+      return
+    }
+    const layoutJson = JSON.stringify({ rooms: plan.rooms, walls: getWalls(plan) })
+    try {
+      await designApi.updateHouseType(id, { layoutJson })
+      get().showToast('户型已保存到数据库')
+      await get().loadHouseTypes()
+    } catch {
+      get().showToast('保存户型失败，请确认后端已启动')
+    }
   },
 
   applyHouseType: (ht) => {
     console.log("========= 应用房屋类型 =========")
     let rawRooms: unknown[] = []
+    let rawWalls: Wall[] | undefined
     try {
       const layout = JSON.parse(ht.layoutJson)
       if (Array.isArray(layout.rooms)) rawRooms = layout.rooms
+      if (Array.isArray(layout.walls)) {
+        rawWalls = (layout.walls as Array<Record<string, unknown>>)
+          .map((w) => ({
+            x1: Number(w.x1),
+            z1: Number(w.z1),
+            x2: Number(w.x2),
+            z2: Number(w.z2),
+          }))
+          .filter((w) => [w.x1, w.z1, w.x2, w.z2].every(Number.isFinite))
+      }
     } catch {
       rawRooms = []
     }
@@ -217,13 +313,20 @@ export const useAppStore = create<AppState>((set, get) => ({
       description: `户型：${ht.name}`,
       room_bounds: { w: 8, d: 6 },
       rooms,
+      walls: rawWalls,
       furniture: [],
       palette: { wall: '#f5f0e8', floor: '#d9c7a7', accent: '#b89b6a', text: '#2f2a26' },
       materials: [],
       lighting: [],
       summary: `${ht.name} 空户型，从左侧拖拽家具开始设计。`,
     }
-    set({ plan, selectedFurniture: null, editingDesignId: null })
+    set({
+      plan,
+      selectedFurniture: null,
+      editingDesignId: null,
+      editingHouseTypeId: ht.id,
+      editingLayout: false,
+    })
     get().showToast(`已载入户型「${ht.name}」`)
   },
 
@@ -235,6 +338,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   generateDesign: async (description, area, style) => {
+    console.log("生成方案-接口调用")
     set({ generating: true })
     try {
       const plan = await aiApi.generateDesign(description, area, style)

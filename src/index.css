@@ -729,3 +729,52 @@ body {
   border-color: var(--primary);
   color: var(--primary);
 }
+
+/* 户型编辑器 */
+.layout-editor {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.layout-toolbar {
+  display: flex;
+  gap: 6px;
+  padding: 8px 12px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+}
+
+.layout-toolbar button {
+  border: 1px solid var(--border);
+  background: #fff;
+  border-radius: 6px;
+  padding: 5px 12px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.layout-toolbar button:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.layout-toolbar button.active,
+.layout-toolbar button.primary {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
+
+.layout-toolbar button.danger {
+  color: #d0342c;
+  border-color: #f0c0bd;
+}
+
+.layout-stage {
+  flex: 1;
+  overflow: auto;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+}
