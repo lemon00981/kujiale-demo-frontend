@@ -292,12 +292,12 @@ export default function CanvasView() {
         {!plan && !generating && (
           <div className="canvas-empty">
             <div className="empty-icon">🛋️</div>
-            <p>在右侧输入描述，让 AI 为你生成一套设计方案</p>
-            <p className="empty-hint">支持：现代简约 / 北欧 / 新中式 / 轻奢</p>
+            <p>输入描述，让 AI 为你生成一套设计方案</p>
+            {/* <p className="empty-hint">支持：现代简约 / 北欧 / 新中式 / 轻奢</p>
             <button className="btn primary" onClick={newCanvas}>
               新建空白画布
-            </button>
-            <p className="empty-hint">或从左侧拖拽家具到画布，直接开始设计</p>
+            </button> */}
+            <p className="empty-hint">或拖拽家具到画布，直接开始设计</p>
           </div>
         )}
         {plan && view === '3d' && <Scene3D plan={plan} selected={selected} onSelect={onSelect} />}

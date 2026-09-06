@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useAppStore } from '../store/useAppStore'
 import { listFurniture } from '../furniture'
 import type { FurnitureComponentDef } from '../furniture'
@@ -5,6 +6,7 @@ import type { Design, HouseType } from '../types'
 import { FURNITURE_DND_TYPE } from '../dnd'
 
 export default function LeftPanel() {
+  const [open, setOpen] = useState(false)
   const houseTypes = useAppStore((s) => s.houseTypes)
   const designs = useAppStore((s) => s.designs)
   const applyPlan = useAppStore((s) => s.applyPlan)
@@ -59,7 +61,11 @@ export default function LeftPanel() {
   )
 
   return (
-    <aside className="left-panel">
+    <aside className={`left-panel${open ? ' open' : ''}`}>
+      <button className="panel-toggle" onClick={() => setOpen(!open)}>
+        {open ? '‹' : '›'}
+      </button>
+      <div className="left-panel-body">
       <section>
         <h3>家具库（拖拽或点击添加）</h3>
         {Object.entries(furnitureByCategory).map(([cat, items]) => (
@@ -123,6 +129,7 @@ export default function LeftPanel() {
           ))}
         </ul>
       </section>
+      </div>
     </aside>
   )
 }

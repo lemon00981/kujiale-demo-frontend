@@ -13,9 +13,13 @@ const TABS: [Tab, string][] = [
 
 export default function RightPanel() {
   const [tab, setTab] = useState<Tab>('generate')
+  const [open, setOpen] = useState(false)
 
   return (
-    <aside className="right-panel">
+    <aside className={`right-panel${open ? ' open' : ''}`}>
+      <button className="panel-toggle" onClick={() => setOpen(!open)}>
+        {open ? '›' : '‹'}
+      </button>
       <div className="tabs">
         {TABS.map(([k, label]) => (
           <button key={k} className={tab === k ? 'active' : ''} onClick={() => setTab(k)}>
