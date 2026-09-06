@@ -977,4 +977,19 @@ body {
   flex: 1;
   display: grid;
   place-items: center;
+  position: relative;
+}
+
+/* 房间改名输入框（HTML overlay，放在 SVG 外，字号/光标正常） */
+.room-name-input {
+  position: absolute;
+  z-index: 20;
+  font-size: 14px;
+  padding: 3px 8px;
+  border: 1px solid var(--primary);
+  border-radius: 4px;
+  background: #fff;
+  color: #333;
+  width: 60px;
+  outline: 2px solid rgba(47, 111, 237, 0.25);
 }

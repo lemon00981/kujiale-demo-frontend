@@ -24,9 +24,13 @@ export default function LayoutEditor() {
   const [selectedWall, setSelectedWall] = useState<number | null>(null)
   const [drawMode, setDrawMode] = useState(false)
   const [drawStart, setDrawStart] = useState<{ x: number; z: number } | null>(null)
+  const [editingName, setEditingName] = useState<{ i: number; x: number; y: number } | null>(null)
   const [dragRoom, setDragRoom] = useState<{ i: number; rx: number; rz: number; sx: number; sz: number } | null>(null)
   const [resizeRoom, setResizeRoom] = useState<{ i: number; rw: number; rd: number; sx: number; sz: number } | null>(null)
   const svgRef = useRef<SVGSVGElement>(null)
+  const stageRef = useRef<HTMLDivElement>(null)
+  const lastTapRef = useRef<{ i: number; time: number } | null>(null)
+  const renameInputRef = useRef<HTMLInputElement>(null)
 
   const W = plan.room_bounds.w
   const D = plan.room_bounds.d
@@ -132,11 +136,52 @@ export default function LayoutEditor() {
     }
   }
 
-  const onRenameRoom = (i: number) => {
-    const r = plan.rooms[i]
-    const name = window.prompt('房间名称', r.name)
-    if (name && name.trim()) updateRoom(i, { name: name.trim() })
+  // 手动双击检测：移动端触屏的 onDoubleClick 不可靠，用两次快速 pointerdown 判断
+  const handleRoomNameDown = (e: React.PointerEvent, i: number) => {
+    e.stopPropagation()
+    const now = Date.now()
+    const last = lastTapRef.current
+    if (last && last.i === i && now - last.time < 350) {
+      lastTapRef.current = null
+      startRename(i)
+    } else {
+      lastTapRef.current = { i, time: now }
+    }
   }
+
+  const startRename = (i: number) => {
+    const r = plan.rooms[i]
+    const svgRect = svgRef.current!.getBoundingClientRect()
+    const stageRect = stageRef.current!.getBoundingClientRect()
+    setEditingName({
+      i,
+      x: (r.x + 0.12) * scale + (svgRect.left - stageRect.left),
+      y: (r.z + 0.05) * scale + (svgRect.top - stageRect.top),
+    })
+  }
+
+  const commitRename = (name: string) => {
+    if (editingName) {
+      const trimmed = name.trim()
+      if (trimmed) updateRoom(editingName.i, { name: trimmed })
+    }
+    setEditingName(null)
+  }
+
+  // 输入框渲染后延迟聚焦，避开双击的 pointerup/click 导致 input 立即 blur
+  useEffect(() => {
+    if (editingName != null) {
+      const t = setTimeout(() => {
+        const input = renameInputRef.current
+        if (input) {
+          input.focus()
+          const len = input.value.length
+          input.setSelectionRange(len, len)
+        }
+      }, 0)
+      return () => clearTimeout(t)
+    }
+  }, [editingName])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -166,13 +211,10 @@ export default function LayoutEditor() {
           ▦
         </button>
         <button title="删除选中" className="danger" onClick={onDelete}>✕</button>
-        {selectedRoom != null && (
-          <button title="改名" onClick={() => onRenameRoom(selectedRoom)}>✎</button>
-        )}
         <button title="保存户型" className="primary" onClick={saveHouseType}>✓</button>
         {/* <button title="退出编辑" onClick={() => setEditingLayout(false)}>←</button> */}
       </div>
-      <div className="layout-stage">
+      <div className="layout-stage" ref={stageRef}>
         <svg
           ref={svgRef}
           width={W * scale}
@@ -230,8 +272,7 @@ export default function LayoutEditor() {
                     fontSize={0.3}
                     fill="#6b6356"
                     style={{ cursor: 'text' }}
-                    onPointerDown={(e) => e.stopPropagation()}
-                    onDoubleClick={() => onRenameRoom(i)}
+                    onPointerDown={(e) => handleRoomNameDown(e, i)}
                   >
                     {r.name}
                   </text>
@@ -254,6 +295,19 @@ export default function LayoutEditor() {
             {drawStart && <circle cx={drawStart.x} cy={drawStart.z} r={0.15} fill="#ff9500" />}
           </g>
         </svg>
+        {editingName && (
+          <input
+            ref={renameInputRef}
+            className="room-name-input"
+            defaultValue={plan.rooms[editingName.i].name}
+            style={{ left: editingName.x, top: editingName.y, fontSize: 0.3 * scale }}
+            onBlur={(e) => commitRename(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') (e.target as HTMLInputElement).blur()
+              if (e.key === 'Escape') setEditingName(null)
+            }}
+          />
+        )}
       </div>
     </div>
   )
